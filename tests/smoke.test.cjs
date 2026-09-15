@@ -1,0 +1,23 @@
+const {JSDOM,VirtualConsole}=require('jsdom');const fs=require('fs');const path=require('path');
+const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+const vc=new VirtualConsole();vc.on('jsdomError',e=>{if(!/scroll/.test(e.message))console.log('JSERR',e.message)});
+const w=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,url:'http://localhost/',virtualConsole:vc,beforeParse(w){w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.confirm=()=>true;}}).window;const d=w.document;
+const ok=(name,cond)=>console.log((cond?'PASS':'FAIL')+' '+name);
+ok('70 grid tiles', d.querySelectorAll('.tile').length===70);
+ok('4 phase rows', d.querySelectorAll('.phase-row').length===4);
+ok('day panel renders', !!d.querySelector('#dayPanel .day-item'));
+ok('two daily habit rows', d.querySelectorAll('#dayPanel .dogwalk').length===2);
+w.toggleDone(1,'Mon','run'); w.toggleDone(1,'Mon','strength');
+ok('tile turns done', [...d.querySelectorAll('.tile')].find(t=>t.getAttribute('aria-label')==='Week 1 Mon').className.includes('t-done'));
+ok('week builder collapsed when valid', !d.getElementById('weekBuilder').open);
+d.querySelectorAll('.wb-col')[0].querySelector('.placed.run').click();
+ok('removing a run opens builder with warning', d.getElementById('weekBuilder').open && /Check your week/.test(d.getElementById('countNote').textContent));
+d.querySelector('#wbTray .chip').click(); d.querySelectorAll('.wb-col')[1].click();
+ok('tap-to-place run', w.eval('dayRunType.Tue')==='Easy');
+d.getElementById('tabProgress').click();
+ok('progress tab shows', !d.getElementById('viewProgress').hidden);
+setTimeout(async()=>{
+  d.getElementById('pgWeight').value='68'; d.getElementById('pgSave').click(); await new Promise(r=>setTimeout(r,100));
+  ok('progress entry saved', d.querySelectorAll('.entry').length===1);
+  ok('autosave wrote store', !!w.localStorage.getItem('5k-plan-store'));
+},50);

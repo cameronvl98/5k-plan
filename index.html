@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>5km Training Plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="5K Plan">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#993556">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FDF6F8;
+    --ink:#3A1A26;
+    --ink-soft:#8A5A6C;
+    --line:#F0CBDA;
+    --card:#FFFFFF;
+
+    --p50:#FBEAF0; --p100:#F4C0D1; --p200:#ED93B1; --p400:#D4537E; --p600:#993556; --p800:#72243E; --p900:#4B1528;
+
+    --run-bg:var(--p50); --run-text:var(--p600); --run-border:var(--p200);
+    --strength-bg:var(--p100); --strength-text:var(--p900); --strength-border:var(--p400);
+    --rest-bg:#F3ECEE; --rest-text:#9E8590; --rest-border:#E4D6DC;
+
+    --stop:#B4432E; --timer:var(--p600);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;padding:28px 18px 60px;}
+  .wrap{max-width:760px;margin:0 auto;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:1.7rem;margin:0 0 4px;letter-spacing:-0.01em;color:var(--p900);}
+  .sub{color:var(--ink-soft);font-size:0.92rem;margin-bottom:22px;}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;flex:1;min-width:120px;}
+  .stat .label{font-size:0.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;}
+  .stat .value{font-family:'Fraunces',serif;font-size:1.25rem;font-weight:600;margin-top:2px;color:var(--p800);}
+  .section-title{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;margin:30px 0 6px;color:var(--p900);}
+  .hint{color:var(--ink-soft);font-size:0.85rem;margin-bottom:14px;line-height:1.5;}
+
+  /* Calendar-style day grid */
+  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px;}
+  .day-card{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 4px;text-align:center;}
+  .day-card .d{font-size:0.66rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px;display:block;}
+  select{width:100%;font-family:'Inter',system-ui,sans-serif;font-size:0.7rem;font-weight:600;padding:5px 2px;border-radius:6px;border:1px solid var(--run-border);background:var(--run-bg);color:var(--run-text);margin-bottom:6px;}
+  select[data-val="Rest"]{background:var(--rest-bg);color:var(--rest-text);border-color:var(--rest-border);}
+  .str-toggle{font-size:0.66rem;font-weight:600;padding:5px 2px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;width:100%;}
+  .str-toggle.on{background:var(--p600);color:#fff;border-color:var(--p600);}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:0.78rem;color:var(--ink-soft);margin-bottom:14px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .dot.run{background:var(--p400);} .dot.strength{background:var(--p800);} .dot.rest{background:var(--rest-text);}
+
+  .count-note{font-size:0.82rem;margin-bottom:10px;padding:8px 12px;border-radius:8px;background:var(--card);border:1px solid var(--line);}
+  .count-note.warn{border-color:var(--stop);color:var(--stop);}
+
+  details.week{border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px;overflow:hidden;}
+  summary{padding:12px 14px;cursor:pointer;font-weight:600;font-size:0.92rem;display:flex;justify-content:space-between;align-items:center;list-style:none;}
+  summary::-webkit-details-marker{display:none;}
+  summary .wk-phase{font-weight:500;font-size:0.75rem;color:var(--ink-soft);}
+  details[open] > summary{border-bottom:1px solid var(--line);}
+
+  .day-list{display:flex;flex-direction:column;gap:8px;padding:12px;}
+
+  /* Card per day (mix of calendar overview + card detail) */
+  .day-item{border-radius:12px;padding:12px 14px;}
+  .day-item.is-run{background:var(--run-bg);border:1px solid var(--run-border);}
+  .day-item.is-strength{background:var(--strength-bg);border:1px solid var(--strength-border);}
+  .day-item.is-rest{background:var(--rest-bg);border:1px solid var(--rest-border);}
+  .day-item-head{display:flex;align-items:center;gap:10px;}
+  .day-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .day-icon .ic{width:18px;height:18px;display:block;}
+  .day-icon.b-run{background:var(--p100);color:var(--p800);}
+  .day-icon.b-strength{background:var(--p200);color:var(--p900);}
+  .day-icon.b-rest{background:var(--rest-border);color:var(--rest-text);}
+  .day-item-title{font-weight:600;font-size:0.85rem;}
+  .day-item-sub{font-size:0.72rem;color:var(--ink-soft);}
+
+  table{width:100%;border-collapse:collapse;}
+  .tag{display:inline-block;font-size:0.68rem;font-weight:600;padding:2px 8px;border-radius:999px;margin-right:6px;}
+  .tag.run{background:#fff;color:var(--run-text);}
+  .tag.strength{background:#fff;color:var(--strength-text);}
+  .tag.rest{background:#fff;color:var(--rest-text);}
+  .detail{color:var(--ink-soft);font-size:0.8rem;margin-top:3px;line-height:1.55;}
+
+  .sess{display:flex;align-items:flex-start;gap:8px;padding:6px 0 0;}
+  .sess > input{margin-top:3px;width:15px;height:15px;accent-color:var(--p600);flex-shrink:0;cursor:pointer;}
+  .sess.done .tag{opacity:0.55;}
+
+  .dailies{margin-top:8px;padding-top:6px;border-top:1px dashed rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:2px;}
+  .dogwalk{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:0.78rem;color:var(--ink-soft);}
+  .dogwalk input{width:15px;height:15px;accent-color:var(--p600);cursor:pointer;flex-shrink:0;}
+  .dogwalk.done{opacity:0.55;text-decoration:line-through;}
+
+  /* Workout details block */
+  details.workout{border:1px solid rgba(0,0,0,0.08);border-radius:8px;margin-top:8px;background:rgba(255,255,255,0.55);}
+  details.workout summary{padding:8px 10px;font-size:0.78rem;font-weight:600;}
+  details.workout summary .wo-sub{font-weight:500;color:var(--ink-soft);font-size:0.72rem;}
+  .workout-body{padding:8px 10px 10px;}
+  details.runinfo{border:1px solid rgba(0,0,0,0.08);border-radius:8px;margin-top:8px;background:rgba(255,255,255,0.55);}
+  details.runinfo summary{padding:8px 10px;font-size:0.78rem;font-weight:600;}
+  .runinfo-body{padding:2px 10px 10px;font-size:0.78rem;line-height:1.5;color:var(--ink);}
+  .runinfo-body h4{font-family:'Fraunces',serif;font-size:0.82rem;font-weight:600;color:var(--p700);margin:10px 0 3px;}
+  .runinfo-body h4:first-child{margin-top:4px;}
+  .runinfo-body p{margin:0;color:var(--ink-soft);}
+  .runinfo-body ol{margin:2px 0 0;padding-left:18px;color:var(--ink);}
+  .runinfo-body li{margin:2px 0;}
+  .runinfo-body li b{color:var(--p700);}
+  .timer-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px;background:#fff;border-radius:8px;}
+  .timer-btn{background:var(--timer);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.75rem;font-weight:600;cursor:pointer;}
+  .timer-btn.running{background:var(--stop);}
+  .timer-display{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;color:var(--timer);min-width:48px;}
+  .timer-label{font-size:0.72rem;color:var(--ink-soft);}
+
+  .ex-group-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);margin:8px 0 4px;}
+  .ex-row{padding:8px 0;border-top:1px dashed rgba(0,0,0,0.08);}
+  .ex-row:first-of-type{border-top:none;}
+  .ex-top-line{display:flex;align-items:flex-start;gap:8px;}
+  .ex-row.done .ex-name-input{opacity:0.55;text-decoration:line-through;}
+  .ex-name-input{
+    flex:1;width:100%;font-size:0.8rem;font-family:'Inter',system-ui,sans-serif;
+    padding:6px 8px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--ink);
+    resize:none;overflow:hidden;white-space:pre-wrap;word-break:break-word;line-height:1.4;
+  }
+  .ex-name-input:focus{border-color:var(--p200);background:#fff;outline:none;}
+  .ex-controls-line{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .ex-set-row{display:flex;gap:6px;margin-top:4px;}
+  .ex-set-box{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--ink-soft);background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 8px 3px 6px;cursor:pointer;}
+  .ex-set-box input{width:12px;height:12px;accent-color:var(--p600);cursor:pointer;margin:0;}
+  .ex-set-box.checked{background:var(--p50);border-color:var(--p400);color:var(--p600);font-weight:600;}
+  .ex-alt-select{font-size:0.68rem;padding:3px 4px;border-radius:5px;border:1px solid var(--line);background:#fff;color:var(--p600);max-width:100%;}
+  .ex-log{display:flex;gap:5px;flex-shrink:0;}
+  .ex-log input{width:58px;font-size:0.72rem;padding:4px 5px;border-radius:5px;border:1px solid var(--line);font-family:'Inter',system-ui,sans-serif;}
+  .ex-log input::placeholder{color:#C79AAA;}
+
+  .refnote{margin-top:26px;font-size:0.82rem;color:var(--ink-soft);line-height:1.6;}
+  .refnote b{color:var(--ink);}
+
+  .save-bar{display:flex;align-items:center;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .save-btn{background:var(--p600);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:0.8rem;font-weight:600;cursor:pointer;display:inline-block;}
+  .save-btn.load-label{background:#fff;color:var(--p600);border:1px solid var(--p400);}
+  .save-status{font-size:0.78rem;color:var(--ink-soft);}
+
+  /* ---- Tab bar + progress page ---- */
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom));}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 0 calc(8px + env(safe-area-inset-bottom));z-index:20;}
+  .tabbar button{flex:1;max-width:200px;background:none;border:none;font-family:inherit;font-size:0.72rem;font-weight:600;color:var(--ink-soft);padding:6px 0 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .tabbar button .ico{display:flex;height:22px;}
+  .tabbar button.active{color:var(--p600);}
+  .view[hidden]{display:none;}
+  .pg-form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:22px;}
+  .pg-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .pg-field{flex:1;min-width:130px;}
+  .pg-field label{display:block;font-size:0.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;}
+  .pg-field input[type=date],.pg-field input[type=number],.pg-field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:0.9rem;color:var(--ink);background:#fff;}
+  .pg-field textarea{min-height:64px;resize:vertical;}
+  .feel-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .feel-btn{flex:1;min-width:56px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 4px;font-family:inherit;font-size:0.7rem;color:var(--ink-soft);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .feel-btn .face{font-size:1.3rem;line-height:1;}
+  .feel-btn.on{background:var(--p50);border-color:var(--p400);color:var(--p800);font-weight:600;}
+  .photo-pick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .photo-pick .preview{width:72px;height:72px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:var(--p50);display:none;}
+  .photo-pick .preview.show{display:block;}
+  .pg-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+  .pg-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+  .wchart{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 10px 6px;margin-bottom:22px;}
+  .wchart svg{width:100%;height:auto;display:block;}
+  .entry{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
+  .entry img{width:76px;height:76px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--line);}
+  .entry .meta{flex:1;min-width:0;}
+  .entry .date{font-family:'Fraunces',serif;font-weight:600;color:var(--p900);font-size:0.98rem;}
+  .entry .line{font-size:0.82rem;color:var(--ink-soft);margin-top:2px;}
+  .entry .note{font-size:0.85rem;color:var(--ink);margin-top:6px;white-space:pre-wrap;word-break:break-word;}
+  .entry .del{background:none;border:none;color:var(--ink-soft);font-size:0.72rem;cursor:pointer;padding:4px 0 0;font-family:inherit;text-decoration:underline;}
+  .empty{color:var(--ink-soft);font-size:0.85rem;padding:10px 0;}
+  .lightbox{position:fixed;inset:0;background:rgba(58,26,38,0.92);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:12px;}
+  .lightbox .cap{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#fff;font-size:0.85rem;}
+
+  /* ---- Week grid (layout B) ---- */
+  .wk-grid{display:grid;grid-template-columns:26px repeat(7,1fr);gap:4px;margin-bottom:8px;}
+  .wk-grid .hd{font-size:0.72rem;font-weight:700;color:var(--p800);text-align:center;padding-bottom:2px;}
+  .wk-grid .phase-row{grid-column:1 / -1;font-family:'Fraunces',serif;font-size:0.8rem;font-weight:600;color:var(--p800);padding:8px 0 2px;}
+  .wk-grid .wk-lbl{font-size:0.78rem;color:var(--p800);font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .tile{position:relative;border-radius:9px;border:1px solid transparent;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:0;font-family:inherit;}
+  .tile .badge{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .tile .badge .ic{width:16px;height:16px;display:block;}
+  .tile.t-run{background:var(--p50);border-color:var(--p200);color:var(--p800);}
+  .tile.t-run .badge{background:var(--p100);}
+  .tile.t-strength{background:var(--p100);border-color:var(--p400);color:var(--p900);}
+  .tile.t-strength .badge{background:var(--p200);}
+  .tile.t-rest{background:var(--rest-bg);border-color:var(--rest-border);color:var(--rest-text);}
+  .tile.t-rest .badge{background:var(--rest-border);}
+  .tile.t-part{background:var(--p400);border-color:var(--p400);color:var(--p50);}
+  .tile.t-part .badge{background:var(--p600);}
+  .tile.t-done{background:var(--p600);border-color:var(--p600);color:var(--p50);}
+  .tile.t-done .badge{background:var(--p800);}
+  .tile.sel{outline:2px solid var(--p900);outline-offset:1px;}
+  .tile .dots{display:flex;gap:3px;}
+  .tile .dots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:0.25;display:block;}
+  .tile .dots i.on{opacity:1;}
+  .tile.today::after{content:'';position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--p600);border:1.5px solid #fff;box-sizing:border-box;}
+  .wk-grid .wk-lbl.today span{width:20px;height:20px;border-radius:50%;background:var(--p600);color:#fff;display:inline-flex;align-items:center;justify-content:center;}
+  .today-pill{display:inline-block;font-family:'Inter',system-ui,sans-serif;font-size:0.62rem;font-weight:600;color:#fff;background:var(--p600);border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:2px;}
+  .ed-date-btns{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 12px;}
+  .wk-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:0.72rem;color:var(--ink-soft);margin-bottom:16px;}
+  .wk-legend span{display:flex;align-items:center;gap:5px;}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid transparent;}
+  .sw.run{background:var(--run-bg);border-color:var(--run-border);}
+  .sw.strength{background:var(--strength-bg);border-color:var(--strength-border);}
+  .sw.rest{background:var(--rest-bg);border-color:var(--rest-border);}
+  .sw.done{background:var(--p600);}
+  .day-panel{scroll-margin-top:12px;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .panel-head .ttl{font-family:'Fraunces',serif;font-weight:600;font-size:1rem;color:var(--p900);}
+  .panel-head .sub2{font-size:0.72rem;color:var(--ink-soft);margin-top:1px;}
+  .panel-nav{display:flex;gap:6px;}
+  .panel-nav button{background:#fff;border:1px solid var(--p400);color:var(--p600);border-radius:8px;width:34px;height:34px;font-size:1rem;cursor:pointer;font-family:inherit;}
+  @media (max-width:480px){
+    body{padding-left:10px;padding-right:10px;}
+    .wk-grid{grid-template-columns:22px repeat(7,1fr);gap:5px 4px;}
+    .wk-grid .wk-lbl{font-size:0.74rem;}
+    .tile{height:50px;}
+    .tile .badge{width:26px;height:26px;}
+    .tile .dots i{width:6px;height:6px;}
+    .day-grid{gap:4px;}
+  }
+
+  /* ---- Week builder (rows) ---- */
+  details.week-builder{border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:26px;overflow:hidden;}
+  details.week-builder > summary{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;}
+  details.week-builder > summary::-webkit-details-marker{display:none;}
+  .wb-head{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;}
+  .wb-title{font-family:'Fraunces',serif;font-weight:600;font-size:0.95rem;color:var(--p900);}
+  .wb-strip{display:flex;gap:4px;}
+  .wb-chip{width:26px;height:26px;border-radius:7px;border:1px solid transparent;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:600;position:relative;}
+  .wb-chip.run{background:var(--run-bg);border-color:var(--run-border);color:var(--run-text);}
+  .wb-chip.strength{background:var(--strength-bg);border-color:var(--strength-border);color:var(--strength-text);}
+  .wb-chip.rest{background:var(--rest-bg);border-color:var(--rest-border);color:var(--rest-text);}
+  .wb-chip .sd{position:absolute;right:-2px;top:-2px;width:8px;height:8px;border-radius:50%;background:var(--p800);border:1.5px solid #fff;}
+  .wb-edit{font-size:0.75rem;font-weight:600;color:var(--p600);flex-shrink:0;}
+  details.week-builder[open] > summary{border-bottom:1px solid var(--line);}
+  .wb-body{padding:12px 14px 14px;}
+  .wb-rows{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .wb-row{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:8px;}
+  .wb-day{font-size:0.78rem;font-weight:600;color:var(--p900);}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px;}
+  .seg button{flex:1;border:none;background:transparent;border-radius:7px;padding:7px 2px;font-family:inherit;font-size:0.72rem;font-weight:600;color:var(--ink-soft);cursor:pointer;white-space:nowrap;}
+  .seg button.on{background:var(--p600);color:#fff;}
+  .seg button.on.rest{background:var(--rest-text);}
+  .seg button:disabled{opacity:0.3;cursor:not-allowed;}
+  .seg button .lg{display:inline;} .seg button .sm{display:none;}
+  .wb-str{border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:9px;padding:7px 9px;font-family:inherit;font-size:0.72rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .wb-str .ic{width:14px;height:14px;}
+  .wb-str.on{background:var(--p100);border-color:var(--p400);color:var(--p900);}
+  @media (max-width:480px){
+    .wb-row{grid-template-columns:30px 1fr auto;gap:6px;}
+    .seg button{padding:8px 1px;font-size:0.68rem;}
+    .seg button .lg{display:none;} .seg button .sm{display:inline;}
+    .wb-str{padding:8px 7px;}
+    .wb-str .txt{display:none;}
+  }
+
+  /* ---- Week builder: tray + day columns ---- */
+  .wb-tray{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .wb-tray .tl{font-size:0.68rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-right:2px;}
+  .wb-tray .tl.done{color:var(--p600);text-transform:none;letter-spacing:0;font-size:0.78rem;}
+  .chip{border:1px solid var(--run-border);background:var(--run-bg);color:var(--run-text);border-radius:999px;padding:6px 12px;font-family:inherit;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+  .chip .ic{width:13px;height:13px;}
+  .chip.strength{background:var(--strength-bg);border-color:var(--strength-border);color:var(--strength-text);}
+  .chip.pick{background:var(--p600);border-color:var(--p600);color:#fff;outline:2px solid var(--p900);outline-offset:1px;}
+  .chip .n{background:rgba(0,0,0,0.12);border-radius:999px;padding:0 6px;font-size:0.68rem;}
+  .wb-cols{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;}
+  .wb-col{border:1px solid var(--line);background:#fff;border-radius:10px;padding:4px;min-height:100px;display:flex;flex-direction:column;gap:4px;cursor:default;}
+  .wb-col .dn{text-align:center;font-size:0.68rem;font-weight:600;color:var(--ink-soft);padding:2px 0 3px;}
+  .wb-col.target{border:1.5px dashed var(--p400);background:var(--p50);cursor:pointer;}
+  .wb-col .placed{border-radius:7px;padding:6px 2px;font-size:0.66rem;font-weight:600;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid transparent;min-width:0;}
+  .wb-col .placed span{display:block;max-width:100%;line-height:1.15;overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto;}
+  .wb-col .placed .ic{width:14px;height:14px;}
+  .wb-col .placed.run{background:var(--run-bg);border-color:var(--run-border);color:var(--run-text);}
+  .wb-col .placed.strength{background:var(--strength-bg);border-color:var(--strength-border);color:var(--strength-text);}
+  .wb-col .plus{margin-top:auto;text-align:center;color:var(--p400);font-size:1.1rem;line-height:1;padding-bottom:4px;}
+  .wb-col.rest-mark .plus{color:var(--rest-text);}
+  @media (max-width:480px){ .wb-cols{gap:3px;} .wb-col{padding:3px;min-height:110px;} .wb-col .placed{font-size:0.58rem;padding:6px 1px;letter-spacing:-0.01em;} .wb-col .dn{font-size:0.64rem;} }
+
+  /* ---- Drag and drop ---- */
+  .chip,.wb-col .placed{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  .wb-cols.dragging .wb-col{border:1.5px dashed var(--p200);}
+  .wb-cols.dragging .wb-col.over{border-color:var(--p600);background:var(--p50);}
+  .wb-tray.over{border-color:var(--p600);background:var(--p50);}
+  .drag-ghost{position:fixed;z-index:100;pointer-events:none;opacity:0.92;transform:translate(-50%,-50%) scale(1.05);}
+  .drag-src{opacity:0.35;}
+
+
+  /* ---- Plans & settings ---- */
+  .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;}
+  .title-row .sub{margin-bottom:18px;}
+  .title-row > button{flex-shrink:0;margin-top:4px;}
+  .plan-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .plan-card.active{border-color:var(--p400);background:var(--p50);}
+  .plan-card .pc-main{flex:1;min-width:140px;}
+  .plan-card .pc-name{font-family:'Fraunces',serif;font-weight:600;color:var(--p900);font-size:0.98rem;}
+  .plan-card .pc-line{font-size:0.76rem;color:var(--ink-soft);margin-top:2px;}
+  .plan-card .pc-badge{font-size:0.66rem;font-weight:600;color:var(--p600);background:#fff;border:1px solid var(--p200);border-radius:999px;padding:2px 8px;margin-left:6px;}
+  .plan-card .pc-actions{display:flex;gap:6px;}
+  .ed-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .ed-field{flex:1;min-width:120px;}
+  .ed-field label{display:block;font-size:0.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;}
+  .ed-field input,.ed-field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:0.88rem;color:var(--ink);background:#fff;}
+  .ed-field textarea{min-height:58px;resize:vertical;line-height:1.4;}
+  .ed-sub{font-family:'Fraunces',serif;font-size:0.95rem;font-weight:600;color:var(--p900);margin:18px 0 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .ed-phase{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:12px;margin-bottom:10px;}
+  .ed-phase details{border-top:1px dashed rgba(0,0,0,0.08);margin-top:8px;padding-top:6px;}
+  .ed-phase summary{font-size:0.8rem;font-weight:600;color:var(--p700);cursor:pointer;padding:4px 0;list-style:none;}
+  .ed-phase summary::-webkit-details-marker{display:none;}
+  .ed-phase summary::before{content:'▸ ';}
+  .ed-phase details[open] summary::before{content:'▾ ';}
+  .ed-type{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px;}
+  .ed-type .tt{font-size:0.78rem;font-weight:600;color:var(--p800);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .ed-type .tt .ic{width:14px;height:14px;}
+  .ed-help{font-size:0.72rem;color:var(--ink-soft);margin-top:4px;}
+  .ed-remove{background:none;border:none;color:var(--stop);font-family:inherit;font-size:0.72rem;font-weight:600;cursor:pointer;text-decoration:underline;padding:0;}
+  .ed-err{color:var(--stop);font-size:0.8rem;margin-bottom:8px;}
+  .danger-zone{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px dashed rgba(0,0,0,0.1);}
+  .danger-zone button{color:var(--stop);border-color:#E8B7AE;}
+</style>
+</head>
+<body>
+<div class="wrap view" id="viewPlan">
+  <div class="title-row">
+    <div><h1 id="planTitle">Training plan</h1><div class="sub" id="planSub"></div></div>
+    <button class="save-btn load-label" id="openPlans" type="button">Plans &amp; settings</button>
+  </div>
+
+  <div class="stats" id="planStats"></div>
+
+
+  <details class="week-builder" id="weekBuilder">
+    <summary>
+      <div class="wb-head"><div class="wb-title">Your week</div><div class="wb-strip" id="wbStrip"></div></div>
+      <span class="wb-edit" id="wbEdit">Edit</span>
+    </summary>
+    <div class="wb-body">
+      <div class="wb-tray" id="wbTray"></div>
+      <div class="wb-cols" id="wbCols"></div>
+      <div class="count-note" id="countNote"></div>
+    </div>
+  </details>
+
+  <div class="section-title" style="margin-bottom:12px;">Your 10 weeks</div>
+  <div class="wk-grid" id="wkGrid"></div>
+  <div class="wk-legend">
+    <span><span class="sw run"></span>Run</span>
+    <span><span class="sw strength"></span>Strength</span>
+    <span><span class="sw rest"></span>Rest</span>
+    <span><span class="sw done"></span>Done</span>
+  </div>
+  <div class="day-panel" id="dayPanel"></div>
+
+  <div class="refnote" id="refNote"></div>
+</div>
+
+<div class="wrap view" id="viewPlans" hidden>
+  <div class="title-row">
+    <div><h1>Plans &amp; settings</h1><div class="sub">Switch plans, start a new one, or change the details of the plan you're on.</div></div>
+    <button class="save-btn load-label" id="closePlans" type="button">Back</button>
+  </div>
+
+  <div class="section-title" style="margin-top:0;">Your plans</div>
+  <div id="plansList"></div>
+  <div class="pg-actions" style="margin:6px 0 26px;">
+    <button class="save-btn" id="newPlan" type="button">New plan</button>
+    <button class="save-btn load-label" id="dupPlan" type="button">Copy current plan</button>
+  </div>
+
+  <div class="section-title">Build a plan with AI</div>
+  <div class="hint">Describe the race and the goal, and Claude will write a new plan in the same shape as the one you're using now. It lands in the editor for you to check before you use it.</div>
+  <div class="pg-form">
+    <div class="ed-row">
+      <div class="ed-field" style="flex:2;"><label for="aiKey">Anthropic API key</label><input type="password" id="aiKey" autocomplete="off" placeholder="sk-ant-…"><div class="ed-help">Saved on this phone only. Get one at console.anthropic.com. Usage is billed to that account (a plan costs a few cents).</div></div>
+      <div class="ed-field" style="flex:1;min-width:150px;"><label for="aiModel">Model</label><input type="text" id="aiModel" placeholder="claude-sonnet-5"></div>
+    </div>
+    <div class="ed-row"><div class="ed-field"><label for="aiBrief">What do you want?</label><textarea id="aiBrief" style="min-height:90px;" placeholder="e.g. 10km race in 12 weeks. Current 10km 55:30, goal 52:00. Keep 4 runs and 3 strength sessions a week, long runs up to 75 min, one full rest day."></textarea></div></div>
+    <div class="pg-actions">
+      <button class="save-btn" id="aiGenerate" type="button">Generate plan</button>
+      <span class="save-status" id="aiStatus"></span>
+    </div>
+  </div>
+
+  <div class="section-title">Edit current plan</div>
+  <div class="hint">Changes apply to the plan you're using. Your ticks and logs stay where they are.</div>
+  <div class="pg-form" id="planEditor"></div>
+  <div class="pg-actions" style="margin-bottom:8px;">
+    <button class="save-btn" id="savePlan" type="button">Save changes</button>
+    <button class="save-btn load-label" id="cancelPlan" type="button">Discard</button>
+    <span class="save-status" id="planStatus"></span>
+  </div>
+  <div class="section-title">Backup</div>
+  <div class="hint">Everything saves on this phone automatically. A backup file is only for moving to a new phone or if Safari's data gets cleared.</div>
+  <div class="save-bar">
+    <button class="save-btn load-label" id="saveBtn" type="button">Export backup</button>
+    <label class="save-btn load-label" for="loadFile">Import backup</label>
+    <input type="file" id="loadFile" accept="application/json" style="display:none;">
+    <span class="save-status" id="saveStatus"></span>
+  </div>
+
+  <div class="danger-zone">
+    <button class="save-btn load-label" id="resetProgress" type="button">Reset ticks &amp; logs on this plan</button>
+    <button class="save-btn load-label" id="deletePlan" type="button">Delete this plan</button>
+  </div>
+</div>
+
+<div class="wrap view" id="viewProgress" hidden>
+  <h1>Progress</h1>
+  <div class="sub">Log how you're going. Add a photo, your weight, and how you feel. Everything stays on this phone.</div>
+
+  <div class="pg-stats" id="pgStats"></div>
+
+  <div class="wchart" id="wchart" style="display:none;"></div>
+
+  <div class="section-title" style="margin-top:0;">Log an entry</div>
+  <div class="pg-form">
+    <div class="pg-row">
+      <div class="pg-field"><label for="pgDate">Date</label><input type="date" id="pgDate"></div>
+      <div class="pg-field"><label for="pgWeight">Weight (kg)</label><input type="number" id="pgWeight" inputmode="decimal" step="0.1" min="20" max="300" placeholder="optional"></div>
+    </div>
+    <div class="pg-row"><div class="pg-field"><label>How do you feel?</label><div class="feel-row" id="feelRow"></div></div></div>
+    <div class="pg-row"><div class="pg-field"><label for="pgNote">Notes</label><textarea id="pgNote" placeholder="Sleep, energy, soreness, anything worth remembering"></textarea></div></div>
+    <div class="pg-row"><div class="pg-field"><label>Progress photo</label>
+      <div class="photo-pick">
+        <img class="preview" id="pgPreview" alt="">
+        <label class="save-btn load-label" for="pgPhoto">📷 Add photo</label>
+        <input type="file" id="pgPhoto" accept="image/*" style="display:none;">
+        <button class="save-btn load-label" id="pgPhotoClear" type="button" style="display:none;">Remove</button>
+      </div>
+    </div></div>
+    <div class="pg-actions">
+      <button class="save-btn" id="pgSave" type="button">Save entry</button>
+      <span class="save-status" id="pgStatus"></span>
+    </div>
+  </div>
+
+  <div class="section-title">Entries</div>
+  <div id="entryList"></div>
+</div>
+
+<nav class="tabbar">
+  <button id="tabPlan" class="active" type="button"><span class="ico"></span>Plan</button>
+  <button id="tabProgress" type="button"><span class="ico"></span>Progress</button>
+</nav>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt="Progress photo"><div class="cap" id="lightboxCap"></div></div>
+
+<script>
+const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const runTypes = ['Rest','Easy','Intervals','Tempo','Long'];
+const dailyHabits = [
+  {key:'dog',   label:'🐾 Walk the dogs'},
+  {key:'steps', label:'👟 10,000+ steps'}
+];
+
+// ---- Small line icons for the week grid and tab bar (drawn in the current text colour) ----
+const svgIcon = (paths, size=16) => `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const svgFill = (inner, size=16) => `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${inner}</svg>`;
+const ICONS = {
+  check:     svgFill('<path d="M9 16.2L5.3 12.5l-1.8 1.8L9 19.8 20.5 8.3l-1.8-1.8z"/>'),
+  easy:      svgFill('<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>'),
+  intervals: svgFill('<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>'),
+  tempo:     svgFill('<path d="M12 2c.6 4 4.5 5.5 5.5 10 .8 3.6-1.7 8-5.5 8s-6.3-3-5.5-7c.5-2.3 2-3.6 3-4.5 0 2 .8 3.2 2 3.5 1.5-2.2.5-6 .5-10z"/>'),
+  long:      svgFill('<path fill-rule="evenodd" d="M3 21L9 3h6l6 18zM11 5.5h2v3h-2zM11 11h2v3h-2zM11 16.5h2v3h-2z"/>'),
+  strength:  svgFill('<path d="M2 10h2V8h3v8H4v-2H2zM22 10h-2V8h-3v8h3v-2h2zM8 10.5h8v3H8z"/>'),
+  rest:      svgFill('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+  plan:      svgIcon('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>', 22),
+  progress:  svgIcon('<path d="M4 19h16M6 15l4-5 4 3 5-7"/>', 22)
+};
+const runIconSvg = {Easy:ICONS.easy, Intervals:ICONS.intervals, Tempo:ICONS.tempo, Long:ICONS.long, Rest:ICONS.rest};
+const runIcon = {Easy:'🏃', Intervals:'⚡', Tempo:'🔥', Long:'🏃‍♀️', Rest:'🌙'};
+
+const DEFAULT_DAY_RUN = {Mon:'Easy', Tue:'Rest', Wed:'Intervals', Thu:'Rest', Fri:'Tempo', Sat:'Rest', Sun:'Long'};
+const DEFAULT_STRENGTH_DAYS = ['Mon','Thu','Sun'];
+let dayRunType = {...DEFAULT_DAY_RUN};
+let strengthDays = new Set(DEFAULT_STRENGTH_DAYS);
+
+const strengthWorkouts = [
+  { name: 'Full Body A', moves: [
+    {text:'Single leg RDL to row — 4x8/side', alts:['Single leg RDL to press — 4x8/side','Bulgarian split squat to row — 4x8/side','B-stance RDL to row — 4x8/side','Kickstand RDL — 4x10/side','Hip thrusts — 4x12','Glute bridge to row — 4x10','Cable pull-through — 4x12']},
+    {text:'DB halo snatches — 3x16', alts:['Kettlebell swings — 3x15','Thrusters — 3x10','Dumbbell snatch — 3x8/side','Clean and press — 3x8','Medicine ball slams — 3x12','Burpees — 3x10','Box jumps — 3x8']},
+    {text:'Push press — 3x10', alts:['Overhead press — 3x10','Arnold press — 3x10','Landmine press — 3x10/side','Single arm overhead press — 3x8/side','Seated dumbbell press — 3x10','Push ups — 3x12','Z press — 3x8']},
+    {text:'Squat shifts + Cossack squats (superset) — 3x8/side', alts:['Goblet squats + lateral lunges (superset) — 3x8/side','Sumo squats + curtsy lunges (superset) — 3x8/side','Front squats + side lunges (superset) — 3x8/side','Goblet squats — 3x12','Lateral lunges — 3x10/side','Cossack squats — 3x8/side','Wall sit — 3x45 sec']},
+    {text:'Gorilla rows + renegade rows (superset) — 3x10', alts:['Bent over rows + plank rows (superset) — 3x10','Single arm rows + bird dogs (superset) — 3x10/side','Chest supported rows — 3x12','Inverted rows — 3x10','Lat pulldown — 3x12','Seated cable row — 3x12','Band pull-aparts — 3x15']}
+  ]},
+  { name: 'Full Body B', moves: [
+    {text:'Reverse lunge to press — 4x8', alts:['Forward lunge to press — 4x8','Step up to press — 4x8/side','Walking lunge to press — 4x8','Reverse lunges — 4x10/side','Step ups — 4x10/side','Split squats — 4x10/side','Bulgarian split squats — 4x8/side']},
+    {text:'Renegade row — 4x8', alts:['Single arm row — 4x8/side','Plank row — 4x8','Bent over row — 4x8','Gorilla rows — 4x8/side','Chest supported row — 4x10','Seated cable row — 4x10','Inverted rows — 4x8']},
+    {text:'B-stance RDL — 4x8', alts:['Single leg RDL — 4x8/side','Standard RDL — 4x10','Good mornings — 4x10','Kettlebell swings — 4x15','Hip thrusts — 4x12','Kickstand RDL — 4x8/side','Back extensions — 4x12']},
+    {text:'Pike press ups — 4x8', alts:['Shoulder press — 4x10','Incline push ups — 4x10','Wall handstand hold — 3x20 sec','Push ups — 4x10','Push press — 4x8','Arnold press — 4x10','Lateral raises — 4x12']},
+    {text:'Squat to curl — 4x8', alts:['Goblet squat + curl — 4x8','Lunge + curl — 4x8/side','Sumo squat + curl — 4x8','Goblet squats — 4x12','Front squats — 4x10','Hammer curls — 4x12','Squat to press — 4x8']}
+  ]},
+  { name: 'Full Body C', moves: [
+    {text:'Single leg RDL to press — 4x8/side', alts:['Single leg RDL to row — 4x8/side','B-stance RDL to press — 4x8/side','Kickstand RDL — 4x10/side','Standard RDL — 4x10','Hip thrusts — 4x12','Glute bridges — 4x15','Step up to press — 4x8/side']},
+    {text:'Single arm KB row — 4x8/side', alts:['Bent over row — 4x8','Cable row — 4x10','Renegade row — 4x8','Chest supported row — 4x10','Lat pulldown — 4x10','Inverted rows — 4x8','Meadows row — 4x8/side']},
+    {text:'Squat to curl — 4x10', alts:['Goblet squat + curl — 4x10','Lunge + curl — 4x8/side','Goblet squats — 4x12','Sumo squats — 4x12','Front squats — 4x10','Thrusters — 4x10','Bicep curls — 4x12']},
+    {text:'Short to long lunge — 3x8/side', alts:['Walking lunges — 3x10/side','Reverse lunges — 3x10/side','Curtsy lunges — 3x10/side','Split squats — 3x10/side','Step ups — 3x10/side','Bulgarian split squats — 3x8/side','Lateral lunges — 3x8/side']},
+    {text:'Bosu sweeps — 3x8/side', alts:['Mountain climbers — 3x20','Plank shoulder taps — 3x16','Lateral bounds — 3x8/side','Skater jumps — 3x10/side','Bear crawl — 3x20 sec','Plank — 3x40 sec','Side plank — 3x30 sec/side']}
+  ]}
+];
+const abFinisher = { name: 'Ab finisher', moves: [
+  {text:'Dead bugs — 3x12/side', alts:['Bird dogs — 3x10/side','Hollow holds — 3x20 sec','Plank — 3x40 sec','Leg raises — 3x12','Flutter kicks — 3x20 sec','Toe touches — 3x15']},
+  {text:'Standing marches — 3x20/side', alts:['High knees — 3x20 sec','Mountain climbers — 3x20','Bicycle crunches — 3x20','Russian twists — 3x20','Side plank — 3x30 sec/side','Pallof press — 3x12/side']},
+  {text:'Crunches — 3x15', alts:['Sit ups — 3x12','Reverse crunches — 3x15','Leg raises — 3x12','V-ups — 3x10','Hollow rocks — 3x12','Ab rollouts — 3x8']}
+]};
+
+const DEFAULT_WORKOUTS = JSON.parse(JSON.stringify(strengthWorkouts));
+const DEFAULT_AB = JSON.parse(JSON.stringify(abFinisher));
+
+const DEFAULT_PHASES = [
+  {id:'p1', label:'Rebuild base', weeks:[1,2,3], detail:{
+    Easy:{pace:'6:00–6:30/km', desc:'20–25 min continuous'},
+    Intervals:{pace:'1:58/400m (4:54/km)', desc:'6–8 x 400m, 90 sec jog recovery'},
+    Tempo:{pace:'5:20–5:30/km', desc:'15 min continuous'},
+    Long:{pace:'6:00–6:15/km', desc:'45–50 min continuous'},
+    Strength:{pace:'RPE 5–6/10'}
+  }},
+  {id:'p2', label:'Build', weeks:[4,5,6], detail:{
+    Easy:{pace:'5:50–6:15/km', desc:'25–30 min continuous'},
+    Intervals:{pace:'3:55/800m (4:54/km)', desc:'5 x 800m, 2 min recovery'},
+    Tempo:{pace:'5:10–5:20/km', desc:'20 min continuous'},
+    Long:{pace:'Easy 5:50–6:10, mod 5:15–5:25/km', desc:'55–60 min, last 10 min moderate'},
+    Strength:{pace:'RPE 6/10'}
+  }},
+  {id:'p3', label:'Sharpen', weeks:[7,8,9], detail:{
+    Easy:{pace:'5:45–6:10/km', desc:'25–30 min continuous'},
+    Intervals:{pace:'4:54/km or faster', desc:'4–5 x 1000m, 2–3 min recovery'},
+    Tempo:{pace:'5:05–5:10/km', desc:'20–25 min continuous'},
+    Long:{pace:'Base 5:45–6:00, surges ~4:50/km', desc:'60–75 min with 3–4 x 2 min surges'},
+    Strength:{pace:'RPE 5/10'}
+  }},
+  {id:'p4', label:'Taper + Race', weeks:[10], detail:{
+    Easy:{pace:'—', desc:'15–20 min, very light — skip strength this week'},
+    Intervals:{pace:'1:55–2:00/400m', desc:'3–4 x 400m sharpener, full recovery'},
+    Tempo:{pace:'—', desc:'Skip — rest instead'},
+    Long:{pace:'4:54/km avg', desc:'Race day — target 24:30'},
+    Strength:{pace:'Light'}
+  }}
+];
+
+// ---- Run guides: what each run type is for, how it should feel, and the session for each phase ----
+const DEFAULT_GUIDES = {
+  Easy: {
+    what: 'The bread and butter of the plan. Easy runs build your aerobic base and let your body recover from the hard days while still adding running time. Most of your week should feel like this.',
+    feel: 'Conversational. You could chat in full sentences without gasping. Effort about 3–4 out of 10. If you are not sure whether it is easy enough, slow down. Walk breaks are fine.',
+    tip: 'The most common mistake is running easy days too fast. Treat the pace as a ceiling, not a target. Going slower here is what lets you go harder on interval and tempo days.',
+    sessions: {
+      p1: ['<b>Start gently</b> — first 5 min at the slow end of the range', '<b>Run</b> 20–25 min continuous at 6:00–6:30/km', '<b>Finish</b> with 2–3 min walking'],
+      p2: ['<b>Start gently</b> — first 5 min at the slow end of the range', '<b>Run</b> 25–30 min continuous at 5:50–6:15/km', '<b>Finish</b> with 2–3 min walking'],
+      p3: ['<b>Start gently</b> — first 5 min at the slow end of the range', '<b>Run</b> 25–30 min continuous at 5:45–6:10/km', '<b>Finish</b> with 2–3 min walking'],
+      p4: ['<b>Run</b> 15–20 min very light — legs should feel fresher at the end than the start', '<b>No strength</b> this week']
+    }
+  },
+  Intervals: {
+    what: 'Short, fast reps at goal race pace or quicker, with recovery in between. They teach your legs and lungs what 4:54/km feels like without having to hold it for 5km straight. This is where speed comes from.',
+    feel: 'Hard but controlled, about 8 out of 10. The last rep should be the same pace as the first. If you are slowing down by the end, the early reps were too fast. Recoveries are a slow jog or walk — properly slow.',
+    tip: 'A track, a flat measured path, or a running watch all work. No GPS? Use time instead: 400m at race pace is about 2 minutes, 800m about 4 minutes. Never skip the warm-up before fast running.',
+    sessions: {
+      p1: ['<b>Warm up</b> 10 min easy jog, then 3 x 20 sec strides (relaxed fast running, walk back)', '<b>Reps</b> 6–8 x 400m at 1:58 each (4:54/km)', '<b>Recovery</b> 90 sec slow jog between reps', '<b>Cool down</b> 5–10 min easy jog'],
+      p2: ['<b>Warm up</b> 10 min easy jog, then 3 x 20 sec strides', '<b>Reps</b> 5 x 800m at 3:55 each (4:54/km)', '<b>Recovery</b> 2 min slow jog or walk between reps', '<b>Cool down</b> 5–10 min easy jog'],
+      p3: ['<b>Warm up</b> 10 min easy jog, then 3 x 20 sec strides', '<b>Reps</b> 4–5 x 1000m at 4:54 each, or a touch faster if it feels controlled', '<b>Recovery</b> 2–3 min slow jog or walk between reps', '<b>Cool down</b> 5–10 min easy jog'],
+      p4: ['<b>Warm up</b> 10 min easy jog', '<b>Reps</b> 3–4 x 400m at 1:55–2:00 — just a sharpener, not a workout', '<b>Recovery</b> full — walk until you feel ready', '<b>Cool down</b> 5 min easy jog']
+    }
+  },
+  Tempo: {
+    what: 'A sustained run at a "comfortably hard" pace, a little slower than race pace. Tempo runs raise the pace you can hold before fatigue sets in, which is the single biggest driver of a faster 5km. The pace gets quicker each phase.',
+    feel: 'About 6–7 out of 10. You can say a few words but not a sentence. Controlled, not racing. You should finish feeling like you could have done 5 more minutes at that pace.',
+    tip: 'Do not turn it into a time trial. If your pace drifts more than 10 sec/km slower in the second half, you started too fast — begin at the slow end of the range next time and hold it. Flat routes make this much easier to judge.',
+    sessions: {
+      p1: ['<b>Warm up</b> 10 min easy jog', '<b>Tempo</b> 15 min continuous at 5:20–5:30/km', '<b>Cool down</b> 5–10 min easy jog'],
+      p2: ['<b>Warm up</b> 10 min easy jog', '<b>Tempo</b> 20 min continuous at 5:10–5:20/km', '<b>Cool down</b> 5–10 min easy jog'],
+      p3: ['<b>Warm up</b> 10 min easy jog', '<b>Tempo</b> 20–25 min continuous at 5:05–5:10/km — close to race pace now', '<b>Cool down</b> 5–10 min easy jog'],
+      p4: ['<b>Skip it</b> — rest instead. The work is done; this week is about arriving fresh']
+    }
+  },
+  Long: {
+    what: 'The longest run of the week, at easy effort. It builds the endurance that stops the last kilometre of the race from falling apart. It builds from about 45 minutes to an hour and a bit, and in later phases adds some faster running on tired legs.',
+    feel: 'Same as an easy run: conversational, about 3–4 out of 10. Time on your feet matters far more than pace. The moderate finishes and surges in later phases should feel like a step up, not a sprint.',
+    tip: 'Pick a route you enjoy and take water on warm days. Eat something small an hour before. If you feel flat, keep the time but slow the pace — do not cut it short.',
+    sessions: {
+      p1: ['<b>Run</b> 45–50 min continuous at 6:00–6:15/km', '<b>Finish</b> with a few minutes walking'],
+      p2: ['<b>Run</b> 45–50 min easy at 5:50–6:10/km', '<b>Last 10 min</b> lift to moderate, 5:15–5:25/km — practising a faster finish on tired legs', '<b>Finish</b> with a few minutes walking'],
+      p3: ['<b>Run</b> 60 min easy at 5:45–6:00/km — stretch it to 75 min on one or two of these three weeks when you feel good', '<b>Surges</b> in the second half: 3–4 x 2 min at about 4:50/km, with at least 3 min easy between each', '<b>Finish</b> with a few minutes walking'],
+      p4: ['<b>Race day.</b> Warm up 10–12 min easy jog plus 3 short strides, finishing about 10 min before the start', '<b>First km</b> at 4:54 — not faster, even if it feels easy. Everyone goes out too quick', '<b>Middle</b> hold 4:54 and stay relaxed — shoulders down, short quick steps', '<b>Last km</b> give what is left. Target 24:30']
+    }
+  }
+};
+const DEFAULT_NOTES = `Strength tip: if strength lands the day before Intervals or Tempo, keep it lighter (RPE 5 or under) so your legs are fresh.
+Long run tip: builds each phase (45–50 → 55–60 → 60–75 min) — keep the extra time at easy effort rather than pushing pace. 75 min is a sometimes, not an every-week.
+Strength source: full body workouts based on routines posted by @estherrcooper on TikTok — search her account for video demonstrations of each move.
+Note: add a start date in Plans & settings and the grid marks today. Your ticks, logged weights and reps save on this phone automatically. Use Export backup now and then in case you change phones or clear Safari data.`;
+const OLD_DATE_NOTE = "weeks aren't tied to calendar dates — start at Week 1 whenever you begin.";
+const NEW_DATE_NOTE = "add a start date in Plans & settings and the grid marks today.";
+
+const deepCopy = o => JSON.parse(JSON.stringify(o));
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+function makeDefaultPlan(){
+  return {
+    id: newId(),
+    name: '5km Training Plan',
+    distanceKm: 5,
+    currentPB: '25:15',
+    goalTime: '24:30',
+    weeks: 10,
+    phases: DEFAULT_PHASES.map(p=>({ id:p.id, label:p.label, start:p.weeks[0], detail:deepCopy(p.detail) })),
+    guides: deepCopy(DEFAULT_GUIDES),
+    notes: DEFAULT_NOTES,
+    startDate: ''
+  };
+}
+let plan = makeDefaultPlan();
+
+function phaseRanges(){
+  const ps = [...plan.phases].sort((a,b)=>a.start-b.start);
+  return ps.map((p,i)=>{
+    const from = Math.max(1, p.start), to = i<ps.length-1 ? ps[i+1].start-1 : plan.weeks;
+    const weeks = []; for(let w=from; w<=to; w++) weeks.push(w);
+    return Object.assign({}, p, {weeks});
+  });
+}
+function phaseForWeek(w){ const r = phaseRanges(); return r.find(p=>p.weeks.includes(w)) || r[0]; }
+
+function parseTime(s){ const m = String(s||'').trim().match(/^(\d+):(\d{1,2})$/); return m ? (+m[1])*60 + (+m[2]) : null; }
+function fmtTime(sec){ sec = Math.round(sec); return Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0'); }
+function goalPace(){ const t = parseTime(plan.goalTime); return (t && plan.distanceKm>0) ? fmtTime(t/plan.distanceKm) + '/km' : '—'; }
+
+// ---- Calendar dates. plan.startDate is the Monday of week 1 ('YYYY-MM-DD'), or '' when the plan isn't dated. ----
+function isoToDate(iso){ const m = String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); if(!m) return null; const d = new Date(+m[1], +m[2]-1, +m[3]); return (d.getMonth()===+m[2]-1 && d.getDate()===+m[3]) ? d : null; }
+function dateToISO(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function addDays(iso, n){ const d = isoToDate(iso); d.setDate(d.getDate()+n); return dateToISO(d); }
+function mondayOf(iso){ const d = isoToDate(iso); if(!d) return ''; d.setDate(d.getDate() - (d.getDay()+6)%7); return dateToISO(d); }
+function dateFor(week, day){ return plan.startDate ? addDays(plan.startDate, (week-1)*7 + days.indexOf(day)) : ''; }
+function todayCell(){
+  // The grid tile that is today, or null when the plan has no start date or today is outside it.
+  const start = isoToDate(plan.startDate); if(!start) return null;
+  const diff = Math.round((isoToDate(todayISO()) - start) / 86400000);
+  if(diff < 0 || diff >= plan.weeks*7) return null;
+  return { week: Math.floor(diff/7)+1, day: days[diff%7] };
+}
+function goToToday(){ const t = todayCell(); if(!t) return false; selectedDay = {week:t.week, day:t.day}; return true; }
+function planDateLine(){
+  if(!plan.startDate) return '';
+  const t = todayCell(); if(t) return `Week ${t.week} of ${plan.weeks}`;
+  return todayISO() < plan.startDate ? 'Starts ' + fmtDate(plan.startDate) : 'Finished ' + fmtDate(addDays(plan.startDate, plan.weeks*7-1));
+}
+
+let completed = {};
+function ensureWeek(w){
+  if(!completed[w]) completed[w] = {};
+  days.forEach(d=>{ if(!completed[w][d]) completed[w][d] = {run:false, strength:false, dog:false, steps:false}; });
+}
+for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+
+let exLog = {};
+let selectedDay = {week:1, day:'Mon'};
+let renderedDate = '';   // calendar date of the last render, so reopening on a new day can move to today
+function clampSelected(){
+  if(!selectedDay || !days.includes(selectedDay.day)) selectedDay = {week:1, day:'Mon'};
+  selectedDay.week = Math.min(Math.max(1, selectedDay.week|0), plan.weeks);
+}
+function ensureExLog(week, day){
+  if(!exLog[week]) exLog[week] = {};
+  if(!exLog[week][day]) exLog[week][day] = {main:[], ab:[]};
+}
+
+
+// ---- On-device storage (autosave). One store holds every plan and its own progress. ----
+const STORE_KEY = '5k-plan-store';
+const LEGACY_KEY = '5k-plan-v1';
+let store = { activeId: null, plans: [] };
+let persistTimer = null;
+
+function stateSnapshot(){
+  return {
+    dayRunType, strengthDays: [...strengthDays], completed, exLog, selectedDay,
+    strengthWorkouts: strengthWorkouts.map(w=>({name:w.name, moves:w.moves})),
+    abFinisher: { moves: abFinisher.moves }
+  };
+}
+function syncActive(){
+  let e = store.plans.find(x=>x.plan.id===store.activeId);
+  if(!e){ e = { plan, state:{} }; store.plans.push(e); store.activeId = plan.id; }
+  e.plan = plan;
+  e.state = stateSnapshot();
+}
+function snapshot(){ syncActive(); return { version: 2, activeId: store.activeId, plans: store.plans }; }
+function persist(){
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(()=>{
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); }catch(err){ /* storage full or unavailable */ }
+  }, 150);
+}
+function resetGlobals(){
+  dayRunType = {...DEFAULT_DAY_RUN};
+  strengthDays = new Set(DEFAULT_STRENGTH_DAYS);
+  completed = {}; exLog = {};
+  selectedDay = {week:1, day:'Mon'};
+  strengthWorkouts.forEach((w,i)=>{ w.moves = deepCopy(DEFAULT_WORKOUTS[i].moves); });
+  abFinisher.moves = deepCopy(DEFAULT_AB.moves);
+}
+function applyState(data){
+  if(!data) return;
+  if(data.dayRunType) dayRunType = data.dayRunType;
+  if(data.strengthDays) strengthDays = new Set(data.strengthDays);
+  if(data.completed) completed = data.completed;
+  if(data.exLog) exLog = data.exLog;
+  if(data.selectedDay) selectedDay = data.selectedDay;
+  if(data.strengthWorkouts){
+    data.strengthWorkouts.forEach((wo,i)=>{ if(strengthWorkouts[i] && wo.moves) strengthWorkouts[i].moves = wo.moves; });
+  }
+  if(data.abFinisher && data.abFinisher.moves){ abFinisher.moves = data.abFinisher.moves; }
+}
+function loadPlan(id){
+  const e = store.plans.find(x=>x.plan.id===id);
+  if(!e) return false;
+  store.activeId = id;
+  plan = e.plan;
+  if(!plan.guides) plan.guides = deepCopy(DEFAULT_GUIDES);
+  if(!plan.phases || !plan.phases.length) plan.phases = makeDefaultPlan().phases;
+  if(typeof plan.notes !== 'string') plan.notes = DEFAULT_NOTES;
+  if(plan.notes.includes(OLD_DATE_NOTE)) plan.notes = plan.notes.replace(OLD_DATE_NOTE, NEW_DATE_NOTE);
+  plan.startDate = typeof plan.startDate === 'string' ? mondayOf(plan.startDate) : '';
+  resetGlobals();
+  applyState(e.state);
+  for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+  clampSelected();
+  goToToday();
+  wbPick = null;
+  return true;
+}
+function applyData(data){
+  // Backup import: new multi-plan format, or the older single-plan format.
+  if(data && Array.isArray(data.plans) && data.plans.length){
+    syncActive();
+    data.plans.forEach(entry=>{
+      if(!entry || !entry.plan || !entry.plan.id) return;
+      const i = store.plans.findIndex(x=>x.plan.id===entry.plan.id);
+      if(i>=0) store.plans[i] = entry; else store.plans.push(entry);
+    });
+    loadPlan(store.plans.some(x=>x.plan.id===data.activeId) ? data.activeId : store.plans[0].plan.id);
+  } else if(data){
+    applyState(data);
+    for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+    clampSelected();
+  }
+}
+function restore(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      if(s && Array.isArray(s.plans) && s.plans.length){
+        store = { activeId: s.activeId, plans: s.plans };
+        if(!loadPlan(store.activeId)) loadPlan(store.plans[0].plan.id);
+        return;
+      }
+    }
+    // First run on this version: pick up progress saved by the older single-plan version.
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    store = { activeId: plan.id, plans: [{ plan, state: {} }] };
+    if(legacy){
+      const st = JSON.parse(legacy);
+      try{ const sel = JSON.parse(localStorage.getItem('5k-plan-selected')||'null'); if(sel) st.selectedDay = sel; }catch(e){}
+      applyState(st);
+      for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+      clampSelected();
+    }
+  }catch(err){ /* ignore corrupt data */ }
+}
+window.addEventListener('pagehide', ()=>{ try{ localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); }catch(e){} });
+// Opened again on a later day (iOS keeps the app resident): move to today's tile and refresh the highlight.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState!=='visible' || todayISO()===renderedDate) return;
+  goToToday();
+  render();
+});
+
+function toggleDone(week, day, kind){
+  ensureWeek(week);
+  completed[week][day][kind] = !completed[week][day][kind];
+  render();
+}
+function setRunType(day, val){ dayRunType[day] = val; render(); }
+let wbPick = null;
+// ---- Drag and drop for the week builder (pointer events, works with touch and mouse) ----
+let dragState = null;
+let suppressNextClick = false;
+document.addEventListener('click', (e)=>{ if(suppressNextClick){ e.stopPropagation(); e.preventDefault(); suppressNextClick = false; } }, true);
+
+function makeDraggable(el, src){
+  el.addEventListener('pointerdown', (e)=>{
+    if(e.button!==undefined && e.button!==0) return;
+    dragState = { src, el, startX:e.clientX, startY:e.clientY, active:false, ghost:null, over:null, pointerId:e.pointerId };
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', (e)=>{
+    if(!dragState || dragState.el!==el) return;
+    const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
+    if(!dragState.active){
+      if(Math.hypot(dx,dy) < 6) return;
+      dragState.active = true;
+      wbPick = null;
+      const g = el.cloneNode(true);
+      g.className = el.className + ' drag-ghost';
+      g.style.width = el.getBoundingClientRect().width + 'px';
+      document.body.appendChild(g);
+      dragState.ghost = g;
+      el.classList.add('drag-src');
+      document.getElementById('wbCols').classList.add('dragging');
+    }
+    dragState.ghost.style.left = e.clientX + 'px';
+    dragState.ghost.style.top = e.clientY + 'px';
+    const target = dropTargetAt(e.clientX, e.clientY);
+    if(dragState.over && dragState.over!==target) dragState.over.classList.remove('over');
+    if(target && canDropOn(target, dragState.src)) { target.classList.add('over'); dragState.over = target; }
+    else dragState.over = null;
+    e.preventDefault();
+  });
+  const finish = (e, cancelled)=>{
+    if(!dragState || dragState.el!==el) return;
+    const st = dragState; dragState = null;
+    try{ el.releasePointerCapture(st.pointerId); }catch(err){}
+    if(!st.active) return;
+    suppressNextClick = true;
+    setTimeout(()=>{ suppressNextClick = false; }, 300);
+    if(st.ghost) st.ghost.remove();
+    el.classList.remove('drag-src');
+    document.getElementById('wbCols').classList.remove('dragging');
+    if(st.over) st.over.classList.remove('over');
+    if(cancelled || !st.over) return;
+    applyDrop(st.over, st.src);
+  };
+  el.addEventListener('pointerup', (e)=>finish(e,false));
+  el.addEventListener('pointercancel', (e)=>finish(e,true));
+}
+function dropTargetAt(x, y){
+  const g = dragState && dragState.ghost; if(g) g.style.display='none';
+  const under = document.elementFromPoint(x, y);
+  if(g) g.style.display='';
+  if(!under) return null;
+  return under.closest('.wb-col') || under.closest('.wb-tray');
+}
+function canDropOn(target, src){
+  if(target.classList.contains('wb-tray')) return src.fromDay !== null;
+  const day = target.dataset.day;
+  if(day === src.fromDay) return false;
+  if(src.kind==='strength') return !strengthDays.has(day);
+  return true;
+}
+function applyDrop(target, src){
+  if(target.classList.contains('wb-tray')){
+    if(src.kind==='strength') strengthDays.delete(src.fromDay); else dayRunType[src.fromDay] = 'Rest';
+    render(); return;
+  }
+  const day = target.dataset.day;
+  if(src.kind==='strength'){
+    if(src.fromDay) strengthDays.delete(src.fromDay);
+    strengthDays.add(day);
+  } else {
+    if(src.fromDay) dayRunType[src.fromDay] = 'Rest';
+    dayRunType[day] = src.type;
+  }
+  render();
+}
+
+function placePick(day){
+  if(!wbPick) return;
+  if(wbPick==='Strength'){ strengthDays.add(day); }
+  else { dayRunType[day] = wbPick; }
+  wbPick = null;
+  render();
+}
+function toggleStrength(day){
+  if(strengthDays.has(day)) strengthDays.delete(day); else strengthDays.add(day);
+  render();
+}
+function toggleExSet(week, day, group, idx, setIdx){
+  ensureExLog(week, day);
+  const arr = exLog[week][day][group];
+  if(!arr[idx]) arr[idx] = {sets:[false,false,false], weight:'', reps:''};
+  if(!arr[idx].sets) arr[idx].sets = [false,false,false];
+  arr[idx].sets[setIdx] = !arr[idx].sets[setIdx];
+  render();
+}
+function updateExLog(week, day, group, idx, field, val){
+  ensureExLog(week, day);
+  const arr = exLog[week][day][group];
+  if(!arr[idx]) arr[idx] = {sets:[false,false,false], weight:'', reps:''};
+  arr[idx][field] = val;
+  persist();
+}
+
+function attachTimer(btn, display){
+  let remaining = 120;
+  let interval = null;
+  function stop(reset){
+    if(interval){ clearInterval(interval); interval = null; }
+    btn.textContent = 'Start rest (2:00)';
+    btn.classList.remove('running');
+    if(reset) display.textContent = '2:00';
+  }
+  btn.onclick = ()=>{
+    if(interval){ stop(true); return; }
+    remaining = 120;
+    btn.textContent = 'Stop';
+    btn.classList.add('running');
+    display.textContent = '2:00';
+    interval = setInterval(()=>{
+      remaining--;
+      const m = Math.floor(remaining/60);
+      const s = String(remaining%60).padStart(2,'0');
+      display.textContent = `${m}:${s}`;
+      if(remaining <= 0){
+        clearInterval(interval); interval = null;
+        display.textContent = 'Go!';
+        btn.textContent = 'Start rest (2:00)';
+        btn.classList.remove('running');
+      }
+    }, 1000);
+  };
+}
+
+function buildExerciseRow(week, day, group, idx, movesArray){
+  ensureExLog(week, day);
+  const entry = exLog[week][day][group][idx] || {sets:[false,false,false], weight:'', reps:''};
+  if(!entry.sets) entry.sets = [false,false,false];
+  const moveObj = movesArray[idx];
+  const allDone = entry.sets.every(Boolean);
+  const row = document.createElement('div');
+  row.className = 'ex-row' + (allDone ? ' done' : '');
+
+  const topLine = document.createElement('div');
+  topLine.className = 'ex-top-line';
+
+  const nameInput = document.createElement('textarea');
+  nameInput.className = 'ex-name-input';
+  nameInput.rows = 1;
+  nameInput.value = moveObj.text;
+  const autosize = (el)=>{ el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+  nameInput.oninput = (e)=>{ moveObj.text = e.target.value; autosize(e.target); persist(); };
+  topLine.appendChild(nameInput);
+  row.appendChild(topLine);
+  setTimeout(()=>autosize(nameInput), 0);
+
+  const setRow = document.createElement('div');
+  setRow.className = 'ex-set-row';
+  [0,1,2].forEach(setIdx=>{
+    const setBox = document.createElement('label');
+    setBox.className = 'ex-set-box' + (entry.sets[setIdx] ? ' checked' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = entry.sets[setIdx];
+    cb.onchange = ()=>toggleExSet(week, day, group, idx, setIdx);
+    setBox.appendChild(cb);
+    setBox.append(`Set ${setIdx+1}`);
+    setRow.appendChild(setBox);
+  });
+  row.appendChild(setRow);
+
+  const controlsLine = document.createElement('div');
+  controlsLine.className = 'ex-controls-line';
+
+  const altSelect = document.createElement('select');
+  altSelect.className = 'ex-alt-select';
+  const currentOpt = document.createElement('option');
+  currentOpt.value = '__current__'; currentOpt.textContent = 'Swap exercise…';
+  altSelect.appendChild(currentOpt);
+  moveObj.alts.forEach(alt=>{
+    const opt = document.createElement('option');
+    opt.value = alt; opt.textContent = alt;
+    altSelect.appendChild(opt);
+  });
+  altSelect.value = '__current__';
+  altSelect.onchange = (e)=>{
+    if(e.target.value !== '__current__'){
+      const oldText = moveObj.text;
+      moveObj.text = e.target.value;
+      if(!moveObj.alts.includes(oldText)) moveObj.alts.push(oldText);
+      moveObj.alts = moveObj.alts.filter(a=>a!==moveObj.text);
+      render();
+    }
+  };
+
+  const logWrap = document.createElement('div');
+  logWrap.className = 'ex-log';
+  const weightInput = document.createElement('input');
+  weightInput.type = 'text'; weightInput.placeholder = 'kg'; weightInput.value = entry.weight;
+  weightInput.oninput = (e)=>updateExLog(week, day, group, idx, 'weight', e.target.value);
+  const repsInput = document.createElement('input');
+  repsInput.type = 'text'; repsInput.placeholder = 'reps'; repsInput.value = entry.reps;
+  repsInput.oninput = (e)=>updateExLog(week, day, group, idx, 'reps', e.target.value);
+  logWrap.appendChild(weightInput); logWrap.appendChild(repsInput);
+
+  controlsLine.appendChild(altSelect);
+  controlsLine.appendChild(logWrap);
+  row.appendChild(controlsLine);
+
+  return row;
+}
+
+function buildStrengthDetails(week, day, workout){
+  const det = document.createElement('details');
+  det.className = 'workout';
+  det.dataset.key = `wo-${week}-${day}`;
+  const summary = document.createElement('summary');
+  summary.innerHTML = `<span>${workout.name}</span><span class="wo-sub">tap to log</span>`;
+  det.appendChild(summary);
+  const bodyDiv = document.createElement('div');
+  bodyDiv.className = 'workout-body';
+
+  const timerRow = document.createElement('div');
+  timerRow.className = 'timer-row';
+  const timerBtn = document.createElement('button');
+  timerBtn.className = 'timer-btn'; timerBtn.textContent = 'Start rest (2:00)';
+  const timerDisplay = document.createElement('span');
+  timerDisplay.className = 'timer-display'; timerDisplay.textContent = '2:00';
+  const timerLabel = document.createElement('span');
+  timerLabel.className = 'timer-label'; timerLabel.textContent = 'rest between sets';
+  attachTimer(timerBtn, timerDisplay);
+  timerRow.appendChild(timerBtn); timerRow.appendChild(timerDisplay); timerRow.appendChild(timerLabel);
+  bodyDiv.appendChild(timerRow);
+
+  const mainLabel = document.createElement('div');
+  mainLabel.className = 'ex-group-label'; mainLabel.textContent = workout.name;
+  bodyDiv.appendChild(mainLabel);
+  workout.moves.forEach((m,i)=> bodyDiv.appendChild(buildExerciseRow(week, day, 'main', i, workout.moves)));
+
+  const abLabel = document.createElement('div');
+  abLabel.className = 'ex-group-label'; abLabel.textContent = abFinisher.name;
+  bodyDiv.appendChild(abLabel);
+  abFinisher.moves.forEach((m,i)=> bodyDiv.appendChild(buildExerciseRow(week, day, 'ab', i, abFinisher.moves)));
+
+  det.appendChild(bodyDiv);
+  return det;
+}
+
+function buildDayItem(week, day, openWorkoutKeys){
+  const phase = phaseForWeek(week);
+  {
+    const type = dayRunType[day];
+    const isRun = type !== 'Rest';
+    const isStrength = strengthDays.has(day);
+    const item = document.createElement('div');
+    item.className = 'day-item ' + (isStrength ? 'is-strength' : (isRun ? 'is-run' : 'is-rest'));
+
+    const head = document.createElement('div');
+    head.className = 'day-item-head';
+    const icon = document.createElement('div');
+    icon.className = 'day-icon';
+    icon.classList.add(isStrength ? 'b-strength' : (isRun ? 'b-run' : 'b-rest'));
+    icon.innerHTML = isStrength ? ICONS.strength : runIconSvg[type];
+    const titleWrap = document.createElement('div');
+    let titleText = day;
+    let subText = isRun ? type : (isStrength ? '' : 'Rest day');
+    if(isStrength && !isRun) subText = 'Strength';
+    titleWrap.innerHTML = `<div class="day-item-title">${titleText}</div><div class="day-item-sub">${subText}${isStrength && isRun ? ' + strength' : ''}</div>`;
+    head.appendChild(icon); head.appendChild(titleWrap);
+    item.appendChild(head);
+
+    if(isRun){
+      const d = phase.detail[type];
+      const runDone = completed[week][day].run;
+      const row = document.createElement('div');
+      row.className = 'sess' + (runDone?' done':'');
+      row.innerHTML = `<input type="checkbox" ${runDone?'checked':''}><div><span class="tag run">${type}</span><div class="detail">${d.desc}${d.pace!=='—'?(' &middot; '+d.pace):''}</div></div>`;
+      row.querySelector('input').onchange = ()=>toggleDone(week, day, 'run');
+      item.appendChild(row);
+
+      const guide = plan.guides[type];
+      if(guide){
+        const info = document.createElement('details');
+        info.className = 'runinfo';
+        info.dataset.key = `run-${week}-${day}`;
+        if(openWorkoutKeys.has(info.dataset.key)) info.open = true;
+        const steps = (guide.sessions[phase.id] || []).map(s=>`<li>${s}</li>`).join('');
+        info.innerHTML = `<summary>How to run this ${type.toLowerCase()} session</summary>
+          <div class="runinfo-body">
+            <h4>What it's for</h4><p>${guide.what}</p>
+            <h4>How it should feel</h4><p>${guide.feel}</p>
+            <h4>This week's session</h4><ol>${steps}</ol>
+            <h4>Tip</h4><p>${guide.tip}</p>
+          </div>`;
+        item.appendChild(info);
+      }
+    }
+    if(isStrength){
+      const sd = phase.detail.Strength;
+      const strDone = completed[week][day].strength;
+      const sortedStrengthDays = days.filter(d=>strengthDays.has(d));
+      const idx = sortedStrengthDays.indexOf(day);
+      const workout = strengthWorkouts[idx % strengthWorkouts.length];
+
+      const headerRow = document.createElement('div');
+      headerRow.className = 'sess' + (strDone?' done':'');
+      headerRow.innerHTML = `<input type="checkbox" ${strDone?'checked':''}><div><span class="tag strength">${workout.name}</span><div class="detail">${sd.pace}</div></div>`;
+      headerRow.querySelector('input').onchange = ()=>toggleDone(week, day, 'strength');
+      item.appendChild(headerRow);
+
+      const detailsBlock = buildStrengthDetails(week, day, workout);
+      if(openWorkoutKeys.has(detailsBlock.dataset.key)) detailsBlock.open = true;
+      item.appendChild(detailsBlock);
+    }
+
+    const dailies = document.createElement('div');
+    dailies.className = 'dailies';
+    dailyHabits.forEach(hab=>{
+      const done = !!completed[week][day][hab.key];
+      const row = document.createElement('div');
+      row.className = 'dogwalk' + (done?' done':'');
+      row.innerHTML = `<input type="checkbox" ${done?'checked':''}><span>${hab.label}</span>`;
+      row.querySelector('input').onchange = ()=>toggleDone(week, day, hab.key);
+      dailies.appendChild(row);
+    });
+    item.appendChild(dailies);
+    return item;
+  }
+}
+
+function render(){
+  for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+  clampSelected();
+  renderedDate = todayISO();
+  const today = todayCell();
+  document.getElementById('planTitle').textContent = plan.name || 'Training plan';
+  document.getElementById('planSub').innerHTML = `PB ${plan.currentPB||'—'} &rarr; Goal ${plan.goalTime||'—'} (${goalPace()}) &middot; ${planDateLine() || (plan.weeks + ' weeks')} &middot; 4 runs / 3 strength / daily walk &amp; steps`;
+  document.getElementById('planStats').innerHTML = `
+    <div class="stat"><div class="label">Current PB</div><div class="value">${plan.currentPB||'—'}</div></div>
+    <div class="stat"><div class="label">Goal time</div><div class="value">${plan.goalTime||'—'}</div></div>
+    <div class="stat"><div class="label">Goal pace</div><div class="value">${goalPace()}</div></div>`;
+
+  const tray = document.getElementById('wbTray');
+  tray.innerHTML = '';
+  const placedTypes = days.map(d=>dayRunType[d]);
+  const unplacedRuns = ['Easy','Intervals','Tempo','Long'].filter(t=>!placedTypes.includes(t));
+  const strengthLeft = Math.max(0, 3 - strengthDays.size);
+  if(wbPick && !(unplacedRuns.includes(wbPick) || (wbPick==='Strength' && strengthLeft>0))) wbPick = null;
+  if(!unplacedRuns.length && !strengthLeft){
+    const t = document.createElement('span'); t.className='tl done'; t.textContent = 'All sessions placed';
+    tray.appendChild(t);
+  } else {
+    const t = document.createElement('span'); t.className='tl'; t.textContent = 'Still to place';
+    tray.appendChild(t);
+    unplacedRuns.forEach(rt=>{
+      const c = document.createElement('button'); c.type='button';
+      c.className = 'chip' + (wbPick===rt?' pick':'');
+      c.innerHTML = runIconSvg[rt] + rt;
+      c.onclick = ()=>{ wbPick = (wbPick===rt ? null : rt); render(); };
+      makeDraggable(c, {kind:'run', type:rt, fromDay:null});
+      tray.appendChild(c);
+    });
+    if(strengthLeft){
+      const c = document.createElement('button'); c.type='button';
+      c.className = 'chip strength' + (wbPick==='Strength'?' pick':'');
+      c.innerHTML = ICONS.strength + 'Strength' + (strengthLeft>1?` <span class="n">${strengthLeft}</span>`:'');
+      c.onclick = ()=>{ wbPick = (wbPick==='Strength' ? null : 'Strength'); render(); };
+      makeDraggable(c, {kind:'strength', type:'Strength', fromDay:null});
+      tray.appendChild(c);
+    }
+  }
+
+  const cols = document.getElementById('wbCols');
+  cols.innerHTML = '';
+  days.forEach(day=>{
+    const isRun = dayRunType[day]!=='Rest', isStr = strengthDays.has(day);
+    const canDrop = wbPick && (wbPick!=='Strength' || !isStr);
+    const col = document.createElement('div');
+    col.className = 'wb-col' + (canDrop?' target':'') + ((!isRun && !isStr)?' rest-mark':'');
+    col.dataset.day = day;
+    col.innerHTML = `<div class="dn">${day}</div>`;
+    if(isRun){
+      const pl = document.createElement('div'); pl.className='placed run';
+      pl.innerHTML = runIconSvg[dayRunType[day]] + '<span>'+dayRunType[day]+'</span>';
+      pl.title = 'Tap to remove';
+      pl.onclick = (e)=>{ e.stopPropagation(); if(canDrop && wbPick!=='Strength'){ placePick(day); return; } setRunType(day, 'Rest'); };
+      makeDraggable(pl, {kind:'run', type:dayRunType[day], fromDay:day});
+      col.appendChild(pl);
+    }
+    if(isStr){
+      const pl = document.createElement('div'); pl.className='placed strength';
+      pl.innerHTML = ICONS.strength + '<span>Strength</span>';
+      pl.title = 'Tap to remove';
+      pl.onclick = (e)=>{ e.stopPropagation(); if(canDrop){ placePick(day); return; } toggleStrength(day); };
+      makeDraggable(pl, {kind:'strength', type:'Strength', fromDay:day});
+      col.appendChild(pl);
+    }
+    const plus = document.createElement('div'); plus.className='plus'; plus.textContent = canDrop ? '+' : ((!isRun && !isStr) ? 'rest' : '');
+    if(!isRun && !isStr && !canDrop){ plus.style.fontSize='0.62rem'; plus.style.fontWeight='600'; }
+    col.appendChild(plus);
+    if(canDrop) col.onclick = ()=> placePick(day);
+    cols.appendChild(col);
+  });
+
+  const strip = document.getElementById('wbStrip');
+  strip.innerHTML = '';
+  days.forEach(day=>{
+    const isRun = dayRunType[day]!=='Rest', isStr = strengthDays.has(day);
+    const chip = document.createElement('div');
+    chip.className = 'wb-chip ' + (isStr ? 'strength' : (isRun ? 'run' : 'rest'));
+    chip.title = day + ': ' + (isRun ? dayRunType[day] : 'Rest') + (isStr ? ' + strength' : '');
+    chip.textContent = day[0];
+    if(isStr && isRun){ const sd=document.createElement('span'); sd.className='sd'; chip.appendChild(sd); }
+    strip.appendChild(chip);
+  });
+
+  const usedTypes = days.map(d=>dayRunType[d]).filter(t=>t!=='Rest');
+  const dupes = usedTypes.filter((t,i)=>usedTypes.indexOf(t)!==i);
+  const missing = ['Easy','Intervals','Tempo','Long'].filter(t=>!usedTypes.includes(t));
+  const restCount = days.filter(d=>dayRunType[d]==='Rest' && !strengthDays.has(d)).length;
+  const strengthCount = strengthDays.size;
+  const note = document.getElementById('countNote');
+  let msgs = []; let warn = false;
+  if(dupes.length){ msgs.push(`${[...new Set(dupes)].join(', ')} used more than once`); warn = true; }
+  if(missing.length){ msgs.push(`missing: ${missing.join(', ')}`); warn = true; }
+  if(strengthCount !== 3){ msgs.push(`${strengthCount} strength session${strengthCount!==1?'s':''} (aim for 3)`); warn = true; }
+  if(restCount < 1){ msgs.push('no full rest day left'); warn = true; }
+  note.className = 'count-note' + (warn ? ' warn' : '');
+  note.textContent = warn ? 'Check your week: ' + msgs.join(' · ') : `Looks good — ${restCount} full rest day${restCount!==1?'s':''}, 4 runs, 3 strength sessions, applied to every week below.`;
+  if(warn) document.getElementById('weekBuilder').open = true;
+  document.getElementById('wbEdit').textContent = document.getElementById('weekBuilder').open ? 'Done' : 'Edit';
+
+  const panel = document.getElementById('dayPanel');
+  const openWorkoutKeys = new Set([...panel.querySelectorAll('details.workout[open], details.runinfo[open]')].map(d=>d.dataset.key));
+
+  const wg = document.getElementById('wkGrid');
+  wg.innerHTML = '';
+  wg.appendChild(document.createElement('div'));
+  days.forEach(d=>{ const hd=document.createElement('div'); hd.className='hd'; hd.textContent=d[0]; wg.appendChild(hd); });
+  for(let w=1; w<=plan.weeks; w++){
+    const phase = phaseForWeek(w);
+    if(phase.weeks[0]===w){ const pr=document.createElement('div'); pr.className='phase-row'; pr.textContent=phase.label; wg.appendChild(pr); }
+    const lbl = document.createElement('div'); lbl.className='wk-lbl';
+    if(today && today.week===w){ lbl.classList.add('today'); lbl.innerHTML = '<span>'+w+'</span>'; } else lbl.textContent = String(w);
+    wg.appendChild(lbl);
+    days.forEach(day=>{
+      const isRun = dayRunType[day]!=='Rest', isStr = strengthDays.has(day);
+      const c = completed[w][day];
+      const planned = (isRun?1:0)+(isStr?1:0);
+      const done = (isRun&&c.run?1:0)+(isStr&&c.strength?1:0);
+      let cls = isStr ? 't-strength' : (isRun ? 't-run' : 't-rest');
+      if(planned>0 && done===planned) cls='t-done'; else if(done>0) cls='t-part';
+      const t = document.createElement('button');
+      t.type='button';
+      const isToday = !!(today && today.week===w && today.day===day);
+      t.className = 'tile '+cls + ((selectedDay.week===w && selectedDay.day===day)?' sel':'') + (isToday?' today':'');
+      t.setAttribute('aria-label', `Week ${w} ${day}`);
+      if(isToday) t.setAttribute('aria-current', 'date');
+      const mark = (planned>0 && done===planned) ? ICONS.check : (isStr ? ICONS.strength : (isRun ? runIconSvg[dayRunType[day]] : ICONS.rest));
+      t.innerHTML = `<span class="badge">${mark}</span><span class="dots"><i class="${c.dog?'on':''}"></i><i class="${c.steps?'on':''}"></i></span>`;
+      t.onclick = ()=>{ selectedDay = {week:w, day}; render(); document.getElementById('dayPanel').scrollIntoView({block:'nearest', behavior:'smooth'}); };
+      wg.appendChild(t);
+    });
+  }
+
+  panel.innerHTML = '';
+  {
+    const w = selectedDay.week, day = selectedDay.day, phase = phaseForWeek(w);
+    const doneCount = days.reduce((acc,d)=> acc + ((dayRunType[d]!=='Rest' && completed[w][d].run)?1:0) + ((strengthDays.has(d) && completed[w][d].strength)?1:0), 0);
+    const totalCount = days.reduce((acc,d)=> acc + (dayRunType[d]!=='Rest'?1:0) + (strengthDays.has(d)?1:0), 0);
+    const habitCounts = dailyHabits.map(hab=> `${hab.label.split(' ')[0]} ${days.filter(d=>completed[w][d][hab.key]).length}/7`).join(' ');
+    const longDay = {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'}[day];
+    const dISO = dateFor(w, day), isToday = !!(today && today.week===w && today.day===day);
+    const head = document.createElement('div');
+    head.className = 'panel-head';
+    head.innerHTML = `<div><div class="ttl">Week ${w} &middot; ${longDay}${dISO ? ' ' + fmtDayMonth(dISO) : ''}${isToday ? '<span class="today-pill">Today</span>' : ''}</div><div class="sub2">${phase.label} &middot; ${doneCount}/${totalCount} sessions this week &middot; ${habitCounts}</div></div>
+      <div class="panel-nav"><button type="button" id="prevDay" aria-label="Previous day">&#8249;</button><button type="button" id="nextDay" aria-label="Next day">&#8250;</button></div>`;
+    panel.appendChild(head);
+    panel.appendChild(buildDayItem(w, day, openWorkoutKeys));
+    const step = (dir)=>{
+      let i = days.indexOf(day) + dir, nw = w;
+      if(i<0){ i=6; nw--; } if(i>6){ i=0; nw++; }
+      if(nw<1 || nw>plan.weeks) return;
+      selectedDay = {week:nw, day:days[i]};
+      render();
+    };
+    head.querySelector('#prevDay').onclick = ()=>step(-1);
+    head.querySelector('#nextDay').onclick = ()=>step(1);
+  }
+
+  const escapeHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const noteLines = String(plan.notes||'').split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m = l.match(/^([^:]{2,40}):\s*(.*)$/);
+    return m ? `<b>${escapeHtml(m[1])}:</b> ${escapeHtml(m[2])}` : escapeHtml(l);
+  });
+  const gp = goalPace();
+  document.getElementById('refNote').innerHTML =
+    `<b>Pace reference:</b> Goal race pace ${gp} (${escapeHtml(plan.goalTime||'—')} for ${plan.distanceKm} km). Easy and long runs stay 60–90 sec/km slower than race pace.` +
+    (noteLines.length ? '<br><br>' + noteLines.join('<br><br>') : '');
+  persist();
+}
+
+async function saveProgress(){
+  const data = snapshot();
+  try{ data.progress = await pgAll(); }catch(e){}
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (plan.name||'training-plan').replace(/[^a-z0-9]+/gi,'-').toLowerCase() + '-backup.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const status = document.getElementById('saveStatus');
+  status.textContent = 'Backup downloaded';
+  setTimeout(()=>{ if(status.textContent==='Backup downloaded') status.textContent=''; }, 4000);
+}
+
+function loadProgress(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      applyData(data);
+      if(Array.isArray(data.progress)){ Promise.all(data.progress.map(en=>pgPut(en))).then(()=>{ if(!document.getElementById('viewProgress').hidden) renderProgress(); }).catch(()=>{}); }
+      render();
+      const status = document.getElementById('saveStatus');
+      persist();
+      status.textContent = 'Backup restored';
+      setTimeout(()=>{ if(status.textContent==='Backup restored') status.textContent=''; }, 4000);
+    }catch(err){
+      document.getElementById('saveStatus').textContent = 'Could not read that file';
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('saveBtn').addEventListener('click', saveProgress);
+document.getElementById('loadFile').addEventListener('change', (e)=>{
+  if(e.target.files && e.target.files[0]) loadProgress(e.target.files[0]);
+});
+
+restore();
+render();
+
+// ---- Progress page: photos, weight, how you feel ----
+const FEELS = [
+  {v:1, face:'😩', label:'Rough'},
+  {v:2, face:'😕', label:'Meh'},
+  {v:3, face:'😐', label:'Okay'},
+  {v:4, face:'🙂', label:'Good'},
+  {v:5, face:'😄', label:'Great'}
+];
+const feelByVal = v => FEELS.find(f=>f.v===v);
+
+// Photos are too big for localStorage, so entries live in IndexedDB.
+const PG_DB = '5k-plan-progress', PG_STORE = 'entries';
+const pgMem = { fallback: !('indexedDB' in window), entries: [] };
+function pgOpen(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(PG_DB, 1);
+    r.onupgradeneeded = ()=> r.result.createObjectStore(PG_STORE, {keyPath:'id'});
+    r.onsuccess = ()=> res(r.result);
+    r.onerror = ()=> rej(r.error);
+  });
+}
+async function pgAll(){
+  if(pgMem.fallback){ try{ return JSON.parse(localStorage.getItem('5k-plan-progress')||'[]'); }catch(e){ return []; } }
+  const db = await pgOpen();
+  return new Promise((res, rej)=>{
+    const q = db.transaction(PG_STORE,'readonly').objectStore(PG_STORE).getAll();
+    q.onsuccess = ()=> res(q.result || []);
+    q.onerror = ()=> rej(q.error);
+  });
+}
+async function pgPut(entry){
+  if(pgMem.fallback){ const all=(await pgAll()).filter(e=>e.id!==entry.id); all.push(entry); localStorage.setItem('5k-plan-progress', JSON.stringify(all)); return; }
+  const db = await pgOpen();
+  return new Promise((res, rej)=>{
+    const t = db.transaction(PG_STORE,'readwrite');
+    t.objectStore(PG_STORE).put(entry);
+    t.oncomplete = ()=> res();
+    t.onerror = ()=> rej(t.error);
+  });
+}
+async function pgDelete(id){
+  if(pgMem.fallback){ const all=(await pgAll()).filter(e=>e.id!==id); localStorage.setItem('5k-plan-progress', JSON.stringify(all)); return; }
+  const db = await pgOpen();
+  return new Promise((res, rej)=>{
+    const t = db.transaction(PG_STORE,'readwrite');
+    t.objectStore(PG_STORE).delete(id);
+    t.oncomplete = ()=> res();
+    t.onerror = ()=> rej(t.error);
+  });
+}
+
+// Shrink photos before saving so the phone doesn't fill up.
+function shrinkImage(file, maxSide=1200, quality=0.82){
+  return new Promise((res, rej)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('bad image')); };
+    img.src = url;
+  });
+}
+
+let pgFeel = 0;
+let pgPhotoData = '';
+function todayISO(){ const d=new Date(); const off=d.getTimezoneOffset()*60000; return new Date(d-off).toISOString().slice(0,10); }
+function fmtDate(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}); }
+function fmtDayMonth(iso){ const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-AU',{day:'numeric',month:'short'}); }
+
+function renderFeelRow(){
+  const row = document.getElementById('feelRow');
+  row.innerHTML = '';
+  FEELS.forEach(f=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'feel-btn' + (pgFeel===f.v?' on':'');
+    b.innerHTML = `<span class="face">${f.face}</span>${f.label}`;
+    b.onclick = ()=>{ pgFeel = (pgFeel===f.v?0:f.v); renderFeelRow(); };
+    row.appendChild(b);
+  });
+}
+
+function resetForm(){
+  document.getElementById('pgDate').value = todayISO();
+  document.getElementById('pgWeight').value = '';
+  document.getElementById('pgNote').value = '';
+  pgFeel = 0; renderFeelRow();
+  pgPhotoData = '';
+  const prev = document.getElementById('pgPreview'); prev.src=''; prev.classList.remove('show');
+  document.getElementById('pgPhotoClear').style.display = 'none';
+  document.getElementById('pgPhoto').value = '';
+}
+
+function weightChart(entries){
+  const box = document.getElementById('wchart');
+  const pts = entries.filter(e=>typeof e.weight==='number').sort((a,b)=>a.date.localeCompare(b.date));
+  if(pts.length < 2){ box.style.display='none'; box.innerHTML=''; return; }
+  const W=600, H=180, padL=38, padR=14, padT=14, padB=28;
+  const ws = pts.map(p=>p.weight);
+  let lo = Math.min(...ws), hi = Math.max(...ws);
+  if(hi-lo < 2){ const mid=(hi+lo)/2; lo=mid-1; hi=mid+1; } else { lo-=0.5; hi+=0.5; }
+  const x = i => padL + (i/(pts.length-1))*(W-padL-padR);
+  const y = w => padT + (1-(w-lo)/(hi-lo))*(H-padT-padB);
+  const path = pts.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(p.weight).toFixed(1)}`).join(' ');
+  const ticks = [lo, (lo+hi)/2, hi];
+  const grid = ticks.map(t=>`<line x1="${padL}" x2="${W-padR}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="#F0CBDA" stroke-width="1"/><text x="${padL-6}" y="${(y(t)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#8A5A6C">${t.toFixed(1)}</text>`).join('');
+  const dots = pts.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.weight).toFixed(1)}" r="4" fill="#993556"/>`).join('');
+  const labelEvery = Math.max(1, Math.ceil(pts.length/6));
+  const labels = pts.map((p,i)=> (i%labelEvery===0 || i===pts.length-1) ? `<text x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#8A5A6C">${p.date.slice(5).replace('-','/')}</text>` : '').join('');
+  box.innerHTML = `<div class="label" style="font-size:0.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em;margin:0 0 4px 4px;">Weight (kg)</div>
+    <svg viewBox="0 0 ${W} ${H}" font-family="Inter,system-ui,sans-serif">${grid}<path d="${path}" fill="none" stroke="#D4537E" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}</svg>`;
+  box.style.display = 'block';
+}
+
+async function renderProgress(){
+  let entries = [];
+  try{ entries = await pgAll(); }catch(e){ entries = []; }
+  entries.sort((a,b)=> b.date.localeCompare(a.date) || (b.id - a.id));
+
+  const stats = document.getElementById('pgStats');
+  const weighed = entries.filter(e=>typeof e.weight==='number');
+  const first = weighed.length ? weighed[weighed.length-1].weight : null;
+  const latest = weighed.length ? weighed[0].weight : null;
+  const change = (first!==null && latest!==null) ? latest-first : null;
+  const feels = entries.filter(e=>e.feel).map(e=>e.feel);
+  const avgFeel = feels.length ? feels.reduce((a,b)=>a+b,0)/feels.length : null;
+  stats.innerHTML = `
+    <div class="stat"><div class="label">Entries</div><div class="value">${entries.length}</div></div>
+    <div class="stat"><div class="label">Latest weight</div><div class="value">${latest!==null?latest.toFixed(1)+' kg':'—'}</div></div>
+    <div class="stat"><div class="label">Change</div><div class="value">${change!==null?(change>0?'+':'')+change.toFixed(1)+' kg':'—'}</div></div>
+    <div class="stat"><div class="label">Feeling</div><div class="value">${avgFeel!==null?feelByVal(Math.round(avgFeel)).face+' '+feelByVal(Math.round(avgFeel)).label:'—'}</div></div>`;
+
+  weightChart(entries);
+
+  const list = document.getElementById('entryList');
+  list.innerHTML = '';
+  if(!entries.length){ list.innerHTML = '<div class="empty">Nothing logged yet. Your first entry will show up here.</div>'; return; }
+  entries.forEach(e=>{
+    const card = document.createElement('div');
+    card.className = 'entry';
+    if(e.photo){
+      const img = document.createElement('img');
+      img.src = e.photo; img.alt = 'Progress photo ' + e.date;
+      img.onclick = ()=> openLightbox(e.photo, fmtDate(e.date));
+      card.appendChild(img);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const bits = [];
+    if(typeof e.weight==='number') bits.push(e.weight.toFixed(1)+' kg');
+    if(e.feel){ const f=feelByVal(e.feel); bits.push(f.face+' '+f.label); }
+    const dateEl = document.createElement('div'); dateEl.className='date'; dateEl.textContent = fmtDate(e.date);
+    const lineEl = document.createElement('div'); lineEl.className='line'; lineEl.textContent = bits.join(' · ');
+    meta.appendChild(dateEl); if(bits.length) meta.appendChild(lineEl);
+    if(e.note){ const n=document.createElement('div'); n.className='note'; n.textContent=e.note; meta.appendChild(n); }
+    const del = document.createElement('button'); del.className='del'; del.type='button'; del.textContent='Delete';
+    del.onclick = async ()=>{ if(confirm('Delete this entry?')){ await pgDelete(e.id); renderProgress(); } };
+    meta.appendChild(del);
+    card.appendChild(meta);
+    list.appendChild(card);
+  });
+}
+
+function openLightbox(src, cap){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxCap').textContent = cap || '';
+  document.getElementById('lightbox').classList.add('show');
+}
+document.getElementById('lightbox').onclick = ()=> document.getElementById('lightbox').classList.remove('show');
+
+document.getElementById('pgPhoto').addEventListener('change', async (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const status = document.getElementById('pgStatus');
+  status.textContent = 'Preparing photo…';
+  try{
+    pgPhotoData = await shrinkImage(f);
+    const prev = document.getElementById('pgPreview'); prev.src = pgPhotoData; prev.classList.add('show');
+    document.getElementById('pgPhotoClear').style.display = 'inline-block';
+    status.textContent = '';
+  }catch(err){ status.textContent = "Couldn't read that photo"; }
+});
+document.getElementById('pgPhotoClear').onclick = ()=>{
+  pgPhotoData = '';
+  const prev = document.getElementById('pgPreview'); prev.src=''; prev.classList.remove('show');
+  document.getElementById('pgPhotoClear').style.display = 'none';
+  document.getElementById('pgPhoto').value = '';
+};
+document.getElementById('pgSave').onclick = async ()=>{
+  const status = document.getElementById('pgStatus');
+  const date = document.getElementById('pgDate').value || todayISO();
+  const wRaw = document.getElementById('pgWeight').value.trim();
+  const weight = wRaw==='' ? null : Number(wRaw);
+  if(wRaw!=='' && !(weight>0)){ status.textContent = 'Weight needs to be a number'; return; }
+  const note = document.getElementById('pgNote').value.trim();
+  if(weight===null && !pgFeel && !note && !pgPhotoData){ status.textContent = 'Add a weight, a feeling, a note or a photo first'; return; }
+  const entry = { id: Date.now(), date, weight, feel: pgFeel || null, note, photo: pgPhotoData || '' };
+  try{
+    await pgPut(entry);
+    resetForm();
+    status.textContent = 'Entry saved';
+    setTimeout(()=>{ if(status.textContent==='Entry saved') status.textContent=''; }, 3000);
+    renderProgress();
+  }catch(err){ status.textContent = "Couldn't save — the phone may be out of storage"; }
+};
+
+// ---- Plans & settings: switch plans, create new ones, edit the current plan ----
+const RUN_TYPES = ['Easy','Intervals','Tempo','Long'];
+let draft = null;
+
+function planSummary(entry){
+  const pl = entry.plan, st = entry.state || {};
+  let done = 0;
+  if(st.completed) Object.values(st.completed).forEach(wk=> Object.values(wk).forEach(d=>{ if(d.run) done++; if(d.strength) done++; }));
+  return `${pl.weeks} weeks &middot; ${pl.phases.length} phases &middot; ${done} sessions ticked`;
+}
+function renderPlansList(){
+  syncActive();
+  const list = document.getElementById('plansList');
+  list.innerHTML = '';
+  store.plans.forEach(entry=>{
+    const isActive = entry.plan.id===store.activeId;
+    const card = document.createElement('div');
+    card.className = 'plan-card' + (isActive?' active':'');
+    card.innerHTML = `<div class="pc-main"><div class="pc-name"></div><div class="pc-line">${planSummary(entry)}</div></div><div class="pc-actions"></div>`;
+    card.querySelector('.pc-name').textContent = entry.plan.name || 'Untitled plan';
+    if(isActive){ const b=document.createElement('span'); b.className='pc-badge'; b.textContent='Using now'; card.querySelector('.pc-name').appendChild(b); }
+    else {
+      const use = document.createElement('button'); use.type='button'; use.className='save-btn'; use.textContent='Use this plan';
+      use.onclick = ()=>{ syncActive(); loadPlan(entry.plan.id); persist(); render(); openPlans(); };
+      card.querySelector('.pc-actions').appendChild(use);
+    }
+    list.appendChild(card);
+  });
+}
+
+// *bold* in the editor becomes <b>bold</b> on the page, and back again.
+const stepsToText = arr => (arr||[]).map(s=> String(s).replace(/<b>(.*?)<\/b>/g,'*$1*').replace(/<[^>]+>/g,'')).join('\n');
+const textToSteps = txt => String(txt||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=> l.replace(/[<>]/g,'').replace(/\*(.+?)\*/g,'<b>$1</b>'));
+
+function field(label, bind, value, opts={}){
+  const type = opts.type||'text';
+  const attrs = `data-bind="${bind}" ${opts.attrs||''}`;
+  const val = String(value==null?'':value).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const help = opts.help ? `<div class="ed-help">${opts.help}</div>` : '';
+  if(type==='textarea') return `<div class="ed-field" style="${opts.style||''}"><label>${label}</label><textarea ${attrs} placeholder="${opts.placeholder||''}">${val}</textarea>${help}</div>`;
+  return `<div class="ed-field" style="${opts.style||''}"><label>${label}</label><input type="${type}" ${attrs} value="${val}" placeholder="${opts.placeholder||''}">${help}</div>`;
+}
+
+function renderEditor(){
+  if(!draft) draft = deepCopy(plan);
+  const ed = document.getElementById('planEditor');
+  const phasesSorted = [...draft.phases].sort((a,b)=>a.start-b.start);
+  let html = `<div class="ed-err" id="edErr"></div>
+    <div class="ed-row">${field('Plan name','name',draft.name)}</div>
+    <div class="ed-row">${field('Start date','startDate',draft.startDate||'',{type:'date'})}</div>
+    <div class="ed-date-btns"><button class="save-btn load-label" type="button" id="startThisWeek">Start this week</button><button class="save-btn load-label" type="button" id="startClear">Clear date</button></div>
+    <div class="ed-row">
+      ${field('Distance (km)','distanceKm',draft.distanceKm,{type:'number',attrs:'step="0.1" min="0.5" inputmode="decimal"'})}
+      ${field('Current PB','currentPB',draft.currentPB,{placeholder:'mm:ss'})}
+      ${field('Goal time','goalTime',draft.goalTime,{placeholder:'mm:ss'})}
+      ${field('Weeks','weeks',draft.weeks,{type:'number',attrs:'min="1" max="30" step="1" inputmode="numeric"'})}
+    </div>
+    <div class="ed-sub"><span>Phases</span><button class="save-btn load-label" type="button" id="addPhase">Add phase</button></div>
+    <div class="ed-help" style="margin:-4px 0 10px;">Each phase runs from its start week until the next phase begins. The last one runs to the end of the plan.</div>`;
+  phasesSorted.forEach((ph, idx)=>{
+    const i = draft.phases.indexOf(ph);
+    const det = ph.detail || {};
+    html += `<div class="ed-phase" data-phase="${ph.id}">
+      <div class="ed-row" style="margin-bottom:6px;">
+        ${field('Phase name',`phases.${i}.label`,ph.label,{style:'flex:2;'})}
+        ${field('Starts week',`phases.${i}.start`,ph.start,{type:'number',attrs:'min="1" step="1" inputmode="numeric"',style:'flex:1;min-width:90px;'})}
+      </div>
+      ${draft.phases.length>1 ? `<button class="ed-remove" type="button" data-remove="${ph.id}">Remove this phase</button>` : ''}
+      <details>
+        <summary>Runs in this phase</summary>`;
+    RUN_TYPES.forEach(rt=>{
+      const d = det[rt] || {pace:'',desc:''};
+      const steps = (draft.guides[rt] && draft.guides[rt].sessions && draft.guides[rt].sessions[ph.id]) || [];
+      html += `<div class="ed-type"><div class="tt">${runIconSvg[rt]}${rt}</div>
+        <div class="ed-row" style="margin-bottom:8px;">
+          ${field('Pace',`phases.${i}.detail.${rt}.pace`,d.pace,{placeholder:'e.g. 5:20–5:30/km'})}
+          ${field('Summary',`phases.${i}.detail.${rt}.desc`,d.desc,{placeholder:'e.g. 20 min continuous',style:'flex:2;'})}
+        </div>
+        ${field('Session steps (one per line, *stars* for bold)','',stepsToText(steps),{type:'textarea',attrs:`data-steps="${ph.id}|${rt}"`,placeholder:'*Warm up* 10 min easy jog'})}
+      </div>`;
+    });
+    html += `<div class="ed-type"><div class="tt">${ICONS.strength}Strength</div>
+        <div class="ed-row" style="margin-bottom:0;">${field('Effort note',`phases.${i}.detail.Strength.pace`,(det.Strength||{}).pace,{placeholder:'e.g. RPE 6/10'})}</div>
+      </div>
+      </details>
+    </div>`;
+  });
+  html += `<div class="ed-sub"><span>Run type descriptions</span></div>
+    <div class="ed-help" style="margin:-4px 0 10px;">Shown in the "How to run this" panel on every run of that type.</div>`;
+  RUN_TYPES.forEach(rt=>{
+    const g = draft.guides[rt] || {what:'',feel:'',tip:''};
+    html += `<div class="ed-phase"><details><summary>${rt}</summary>
+      ${field("What it's for",`guides.${rt}.what`,g.what,{type:'textarea'})}
+      ${field('How it should feel',`guides.${rt}.feel`,g.feel,{type:'textarea'})}
+      ${field('Tip',`guides.${rt}.tip`,g.tip,{type:'textarea'})}
+    </details></div>`;
+  });
+  html += `<div class="ed-sub"><span>Notes at the bottom of the plan</span></div>
+    ${field('Notes (one per line, start a line with "Title:" to bold the title)','notes',draft.notes,{type:'textarea',attrs:'style="min-height:120px"'})}`;
+  ed.innerHTML = html;
+  ed.querySelector('#startThisWeek').onclick = ()=>{ ed.querySelector('[data-bind="startDate"]').value = mondayOf(todayISO()); };
+  ed.querySelector('#startClear').onclick = ()=>{ ed.querySelector('[data-bind="startDate"]').value = ''; };
+  ed.querySelector('#addPhase').onclick = ()=>{
+    collectDraft();
+    const last = [...draft.phases].sort((a,b)=>a.start-b.start).pop();
+    const id = 'p' + newId();
+    const np = { id, label:'New phase', start: Math.min(draft.weeks, (last?last.start:0)+1), detail: last ? deepCopy(last.detail) : {} };
+    draft.phases.push(np);
+    RUN_TYPES.forEach(rt=>{ if(!draft.guides[rt].sessions) draft.guides[rt].sessions = {}; draft.guides[rt].sessions[id] = last ? deepCopy(draft.guides[rt].sessions[last.id]||[]) : []; });
+    renderEditor();
+  };
+  ed.querySelectorAll('[data-remove]').forEach(b=> b.onclick = ()=>{
+    collectDraft();
+    const id = b.dataset.remove;
+    draft.phases = draft.phases.filter(p=>p.id!==id);
+    RUN_TYPES.forEach(rt=>{ if(draft.guides[rt].sessions) delete draft.guides[rt].sessions[id]; });
+    renderEditor();
+  });
+}
+function setPath(obj, path, val){
+  const parts = path.split('.');
+  let o = obj;
+  for(let i=0;i<parts.length-1;i++){ const k = parts[i]; if(o[k]==null) o[k] = {}; o = o[k]; }
+  o[parts[parts.length-1]] = val;
+}
+function collectDraft(){
+  const ed = document.getElementById('planEditor');
+  ed.querySelectorAll('[data-bind]').forEach(el=>{
+    const path = el.dataset.bind; if(!path) return;
+    let v = el.value;
+    if(el.type==='number') v = v==='' ? '' : Number(v);
+    setPath(draft, path, typeof v==='string' ? v.trim() : v);
+  });
+  ed.querySelectorAll('[data-steps]').forEach(el=>{
+    const [pid, rt] = el.dataset.steps.split('|');
+    if(!draft.guides[rt]) draft.guides[rt] = {what:'',feel:'',tip:'',sessions:{}};
+    if(!draft.guides[rt].sessions) draft.guides[rt].sessions = {};
+    draft.guides[rt].sessions[pid] = textToSteps(el.value);
+  });
+}
+function validateDraft(){
+  const errs = [];
+  if(!draft.name) errs.push('Give the plan a name.');
+  const rawStart = String(draft.startDate||'').trim();
+  draft.startDate = rawStart ? mondayOf(rawStart) : '';   // week 1 always begins on a Monday
+  if(rawStart && !draft.startDate) errs.push('Start date should be a real date.');
+  draft.weeks = Math.round(Number(draft.weeks));
+  if(!(draft.weeks>=1 && draft.weeks<=30)) errs.push('Weeks needs to be between 1 and 30.');
+  draft.distanceKm = Number(draft.distanceKm);
+  if(!(draft.distanceKm>0)) errs.push('Distance needs to be more than 0.');
+  if(draft.currentPB && parseTime(draft.currentPB)===null) errs.push('Current PB should look like 25:15.');
+  if(draft.goalTime && parseTime(draft.goalTime)===null) errs.push('Goal time should look like 24:30.');
+  if(!draft.phases.length) errs.push('Add at least one phase.');
+  draft.phases.forEach(p=>{ p.start = Math.round(Number(p.start)); if(!p.label) p.label = 'Phase'; });
+  const starts = draft.phases.map(p=>p.start);
+  if(starts.some(s=>!(s>=1 && s<=draft.weeks))) errs.push('Every phase needs a start week inside the plan.');
+  if(new Set(starts).size !== starts.length) errs.push('Two phases start on the same week.');
+  if(!errs.length && Math.min(...starts)!==1){ draft.phases.sort((a,b)=>a.start-b.start)[0].start = 1; }
+  return errs;
+}
+function openPlans(){
+  draft = deepCopy(plan);
+  document.getElementById('planStatus').textContent = '';
+  renderPlansList();
+  renderEditor();
+  showTab('plans');
+}
+document.getElementById('openPlans').onclick = openPlans;
+document.getElementById('closePlans').onclick = ()=>{ draft = null; showTab('plan'); };
+document.getElementById('cancelPlan').onclick = ()=>{ draft = null; showTab('plan'); };
+document.getElementById('savePlan').onclick = ()=>{
+  collectDraft();
+  const errs = validateDraft();
+  const errBox = document.getElementById('edErr');
+  if(errs.length){ errBox.textContent = errs.join(' '); errBox.scrollIntoView({block:'nearest'}); return; }
+  errBox.textContent = '';
+  const keepId = plan.id;
+  const startChanged = (draft.startDate||'') !== (plan.startDate||'');
+  plan = draft; plan.id = keepId;
+  draft = null;
+  for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+  clampSelected();
+  if(startChanged) goToToday();
+  persist();
+  render();
+  showTab('plan');
+};
+document.getElementById('newPlan').onclick = ()=>{
+  syncActive();
+  const np = makeDefaultPlan();
+  np.name = 'New plan';
+  store.plans.push({ plan: np, state: {} });
+  loadPlan(np.id);
+  persist();
+  render();
+  openPlans();
+  document.getElementById('planEditor').scrollIntoView({behavior:'smooth', block:'start'});
+};
+document.getElementById('dupPlan').onclick = ()=>{
+  syncActive();
+  const np = deepCopy(plan);
+  np.id = newId(); np.name = (plan.name||'Plan') + ' copy'; np.startDate = '';
+  store.plans.push({ plan: np, state: { dayRunType: {...dayRunType}, strengthDays: [...strengthDays], strengthWorkouts: deepCopy(strengthWorkouts), abFinisher: deepCopy({moves: abFinisher.moves}) } });
+  loadPlan(np.id);
+  persist();
+  render();
+  openPlans();
+};
+document.getElementById('resetProgress').onclick = ()=>{
+  if(!confirm('Clear every tick, set and logged weight on this plan? The plan itself stays.')) return;
+  completed = {}; exLog = {}; selectedDay = {week:1, day:'Mon'};
+  for(let w=1; w<=plan.weeks; w++) ensureWeek(w);
+  persist(); render(); renderPlansList();
+  document.getElementById('planStatus').textContent = 'Progress cleared';
+};
+document.getElementById('deletePlan').onclick = ()=>{
+  if(store.plans.length<=1){ document.getElementById('planStatus').textContent = "You can't delete your only plan. Make a new one first."; return; }
+  if(!confirm(`Delete "${plan.name}" and all its ticks and logs? This can't be undone.`)) return;
+  const id = plan.id;
+  store.plans = store.plans.filter(x=>x.plan.id!==id);
+  loadPlan(store.plans[0].plan.id);
+  persist(); render(); openPlans();
+};
+
+// ---- Build a plan with AI (Claude API, key stored on this phone) ----
+const AI_DEFAULT_MODEL = 'claude-sonnet-5';
+try{ document.getElementById('aiKey').value = localStorage.getItem('5k-plan-ai-key') || ''; document.getElementById('aiModel').value = localStorage.getItem('5k-plan-ai-model') || AI_DEFAULT_MODEL; }catch(e){}
+document.getElementById('aiKey').addEventListener('change', e=>{ try{ localStorage.setItem('5k-plan-ai-key', e.target.value.trim()); }catch(err){} });
+document.getElementById('aiModel').addEventListener('change', e=>{ try{ localStorage.setItem('5k-plan-ai-model', e.target.value.trim() || AI_DEFAULT_MODEL); }catch(err){} });
+
+function planForPrompt(pl){
+  // The current plan, in the exact shape we ask the model to return.
+  const keyOf = {}; [...pl.phases].sort((a,b)=>a.start-b.start).forEach((p,i)=> keyOf[p.id] = 'phase'+(i+1));
+  return {
+    name: pl.name, distanceKm: pl.distanceKm, currentPB: pl.currentPB, goalTime: pl.goalTime, weeks: pl.weeks,
+    phases: [...pl.phases].sort((a,b)=>a.start-b.start).map(p=>({ key: keyOf[p.id], label: p.label, start: p.start, detail: p.detail })),
+    guides: Object.fromEntries(RUN_TYPES.map(rt=>{
+      const g = pl.guides[rt] || {};
+      const sessions = {}; Object.entries(g.sessions||{}).forEach(([pid,steps])=>{ if(keyOf[pid]) sessions[keyOf[pid]] = steps.map(s=>String(s).replace(/<b>(.*?)<\/b>/g,'*$1*')); });
+      return [rt, { what: g.what||'', feel: g.feel||'', tip: g.tip||'', sessions }];
+    })),
+    notes: pl.notes || ''
+  };
+}
+function planFromAI(obj){
+  // Turn the model's JSON into a plan the app understands. Throws if it's not usable.
+  if(!obj || typeof obj!=='object') throw new Error('No plan in the reply');
+  if(!Array.isArray(obj.phases) || !obj.phases.length) throw new Error('The reply had no phases');
+  const np = makeDefaultPlan();
+  np.name = String(obj.name || 'New plan').slice(0,80);
+  np.distanceKm = Number(obj.distanceKm) > 0 ? Number(obj.distanceKm) : 5;
+  np.currentPB = parseTime(obj.currentPB)!==null ? String(obj.currentPB) : '';
+  np.goalTime = parseTime(obj.goalTime)!==null ? String(obj.goalTime) : '';
+  np.weeks = Math.min(30, Math.max(1, Math.round(Number(obj.weeks)||10)));
+  const idFor = {};
+  np.phases = obj.phases.map((p,i)=>{
+    const id = 'p' + newId(); idFor[p.key || ('phase'+(i+1))] = id;
+    const det = {};
+    RUN_TYPES.forEach(rt=>{ const d = (p.detail||{})[rt] || {}; det[rt] = { pace: String(d.pace||'—'), desc: String(d.desc||'') }; });
+    det.Strength = { pace: String(((p.detail||{}).Strength||{}).pace || '') };
+    return { id, label: String(p.label||('Phase '+(i+1))).slice(0,40), start: Math.round(Number(p.start)||(i+1)), detail: det };
+  });
+  np.guides = {};
+  RUN_TYPES.forEach(rt=>{
+    const g = (obj.guides||{})[rt] || {};
+    const base = DEFAULT_GUIDES[rt];
+    const sessions = {};
+    Object.entries(g.sessions||{}).forEach(([key,steps])=>{ if(idFor[key] && Array.isArray(steps)) sessions[idFor[key]] = textToSteps(steps.map(String).join('\n')); });
+    np.guides[rt] = { what: String(g.what||base.what), feel: String(g.feel||base.feel), tip: String(g.tip||base.tip), sessions };
+  });
+  np.notes = typeof obj.notes==='string' ? obj.notes : '';
+  // Same checks as the editor, so a slightly odd reply still becomes a valid plan.
+  const saved = draft; draft = np; const errs = validateDraft(); draft = saved;
+  if(errs.length) throw new Error(errs.join(' '));
+  return np;
+}
+document.getElementById('aiGenerate').onclick = async ()=>{
+  const key = document.getElementById('aiKey').value.trim();
+  const model = document.getElementById('aiModel').value.trim() || AI_DEFAULT_MODEL;
+  const brief = document.getElementById('aiBrief').value.trim();
+  const status = document.getElementById('aiStatus');
+  const btn = document.getElementById('aiGenerate');
+  if(!key){ status.textContent = 'Add your API key first'; return; }
+  if(!brief){ status.textContent = 'Describe the plan you want'; return; }
+  btn.disabled = true; status.textContent = 'Writing your plan… this takes about a minute';
+  const example = JSON.stringify(planForPrompt(plan));
+  const system = `You are a running coach who writes structured training plans for a small personal app. Reply with ONE JSON object and nothing else: no markdown, no code fences, no commentary.
+The JSON must have exactly this shape (same keys, same types) as the example plan below. Rules:
+- "weeks" is the total number of weeks. "phases" is an ordered list; each phase has a short "label", a "start" week (first phase starts at 1, starts increase, all within "weeks"), and a unique "key" like "phase1".
+- Each phase's "detail" has Easy, Intervals, Tempo and Long, each with "pace" (a pace or range like "5:20–5:30/km", or "—") and a one-line "desc". It also has Strength with a short "pace" effort note like "RPE 6/10".
+- "guides" has Easy, Intervals, Tempo and Long. Each has "what" (what the run is for), "feel" (effort out of 10 and a talk test), "tip" (the one common mistake), and "sessions": an object keyed by phase key, each an array of 2–5 step strings. Wrap the leading word or two of each step in *asterisks* to make it bold, e.g. "*Warm up* 10 min easy jog".
+- Paces must be consistent with the goal time and distance: work out goal race pace from goalTime / distanceKm and set intervals at or slightly faster than it, tempo 15–35 sec/km slower, easy and long 60–90 sec/km slower. Progress the tempo and interval sessions phase by phase. Make the last phase a taper with the race in the final week's Long run.
+- "currentPB" and "goalTime" are "mm:ss" strings. "notes" is plain text with one tip per line, each starting with a short title and a colon.
+- Keep the same week structure the app uses: 4 runs (one of each type) and 3 strength sessions a week. Write in plain Australian English, short sentences, no emoji.`;
+  const user = `Here is the plan I'm using now, as an example of the shape and tone:\n${example}\n\nNow write a new plan for this brief:\n${brief}`;
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model, max_tokens: 8000, system, messages: [{ role:'user', content: user }] })
+    });
+    const data = await res.json();
+    if(!res.ok){ throw new Error((data && data.error && data.error.message) || ('Request failed (' + res.status + ')')); }
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    const firstBrace = clean.indexOf('{'), lastBrace = clean.lastIndexOf('}');
+    const obj = JSON.parse(clean.slice(firstBrace, lastBrace+1));
+    const np = planFromAI(obj);
+    syncActive();
+    store.plans.push({ plan: np, state: {} });
+    loadPlan(np.id);
+    persist();
+    render();
+    openPlans();
+    document.getElementById('planStatus').textContent = 'New plan added. Check it over and save any changes.';
+    document.getElementById('planEditor').scrollIntoView({ behavior:'smooth', block:'start' });
+    status.textContent = '';
+  }catch(err){
+    status.textContent = "Couldn't build the plan: " + (err.message || 'unknown error');
+  }finally{
+    btn.disabled = false;
+  }
+};
+
+// ---- Tabs ----
+function showTab(name){
+  if(!['plan','plans','progress'].includes(name)) name = 'plan';
+  document.getElementById('viewPlan').hidden = name!=='plan';
+  document.getElementById('viewPlans').hidden = name!=='plans';
+  document.getElementById('viewProgress').hidden = name!=='progress';
+  document.getElementById('tabPlan').classList.toggle('active', name!=='progress');
+  document.getElementById('tabProgress').classList.toggle('active', name==='progress');
+  try{ localStorage.setItem('5k-plan-tab', name==='plans' ? 'plan' : name); }catch(e){}
+  if(name==='progress') renderProgress();
+  window.scrollTo(0,0);
+}
+document.querySelector('#tabPlan .ico').innerHTML = ICONS.plan;
+document.querySelector('#tabProgress .ico').innerHTML = ICONS.progress;
+document.getElementById('weekBuilder').addEventListener('toggle', ()=>{ document.getElementById('wbEdit').textContent = document.getElementById('weekBuilder').open ? 'Done' : 'Edit'; });
+document.getElementById('tabPlan').onclick = ()=>{ draft = null; showTab('plan'); };
+document.getElementById('tabProgress').onclick = ()=> showTab('progress');
+resetForm();
+let startTab = 'plan';
+try{ startTab = localStorage.getItem('5k-plan-tab') || 'plan'; }catch(e){}
+showTab(startTab);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>

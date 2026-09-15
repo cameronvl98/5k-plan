@@ -1,0 +1,13 @@
+{
+  "name": "5k-plan",
+  "private": true,
+  "description": "Chloe's training plan PWA — single index.html, no build step",
+  "scripts": {
+    "test": "node tests/smoke.test.cjs && node tests/plans.test.cjs && node tests/ai.test.cjs && node tests/dates.test.cjs",
+    "serve": "npx --yes serve -l 8080 ."
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^26.0.0"
+  }
+}
