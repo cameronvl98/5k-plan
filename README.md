@@ -40,6 +40,20 @@ Restrictions → Allowed Apps → make sure Safari is on.
 3. `npm test`, then commit and `git push` — Pages rebuilds in about a minute
 4. On the phone, close the app fully and reopen it twice — the new version loads
 
+## iOS app (Capacitor)
+
+The same app also builds as a native iPhone app: `ios/App/App.xcodeproj`.
+
+1. After changing `index.html`: `npm run ios:sync`
+2. `npm run ios:open`, pick your team if Xcode asks, bump the version/build
+   number in the App target
+3. Product → Archive → Distribute App → TestFlight. Chloe installs it from the
+   TestFlight app on her phone (invite her Apple ID as a tester once).
+
+Inside the app, **Export backup** opens the share sheet (Save to Files, AirDrop,
+Mail) instead of downloading. The app keeps its own data, separate from the
+Safari version — use Export/Import to move progress across.
+
 ## Plans
 
 Tap "Plans & settings" at the top of the Plan tab to edit the current plan

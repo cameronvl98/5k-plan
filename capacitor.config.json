@@ -1,0 +1,11 @@
+{
+  "appId": "com.cameronvl.trainingplan",
+  "appName": "5K Plan",
+  "webDir": "www",
+  "backgroundColor": "#FDF6F8",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#FDF6F8",
+    "allowsLinkPreview": false
+  }
+}

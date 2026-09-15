@@ -6,8 +6,10 @@ already made, and how to test and ship changes.
 ## What this is
 
 A personal training-plan app for Chloe (Gold Coast, Australia), built by her
-husband Cameron. It runs as a PWA on her iPhone (Safari → Add to Home Screen).
-Personal use only, one user, no backend, no accounts.
+husband Cameron. It ships two ways from the same `index.html`: as a PWA
+(https://cameronvl98.github.io/5k-plan/, Safari → Add to Home Screen) and as a
+native iOS app via Capacitor (see "iOS app" below). Personal use only, one
+user, no backend, no accounts.
 
 Current plan: 10-week 5km plan, PB 25:15 → goal 24:30 (4:54/km), 4 runs +
 3 strength sessions a week, daily dog walk (Fig and Fern) and 10,000 steps.
@@ -19,10 +21,14 @@ She'll start a new plan (10km, faster 5km, etc.) once this one is done.
   no bundler, no npm dependencies at runtime. Keep it that way.
 - `manifest.webmanifest`, `sw.js` — PWA install + offline cache.
 - `icon-180.png`, `icon-192.png`, `icon-512.png` — home-screen icons.
-- Fonts: Fraunces (headings) + Inter (body) from Google Fonts, cached by the
-  service worker after first load.
+- `fonts/` — Fraunces (headings) + Inter (body) as bundled variable woff2
+  files (latin subset, from Google Fonts), declared with `@font-face` at the
+  top of the `<style>`. No network needed for fonts in either build.
 - `tests/*.test.cjs` — jsdom smoke tests. `npm install` then `npm test`.
 - `README.md` — hosting + install steps for humans.
+- iOS shell: `capacitor.config.json`, `ios/` (Xcode project, Swift Package
+  Manager, committed), `tools/stage-www.cjs` (copies the app into the
+  gitignored `www/` for Capacitor), `assets/` (icon + splash sources).
 
 **Every time `index.html` changes, bump `CACHE_NAME` in `sw.js`** (v26 → v27
 etc.) or installed phones keep the old version.
@@ -36,6 +42,10 @@ etc.) or installed phones keep the old version.
 | `localStorage['5k-plan-ai-key']`, `['5k-plan-ai-model']` | Anthropic API key + model for the AI plan builder |
 | IndexedDB `5k-plan-progress` / store `entries` | Progress-tab entries: `{id, date, weight, feel, note, photo(dataURL)}` — shared across plans |
 | `localStorage['5k-plan-v1']`, `['5k-plan-selected']` | legacy single-plan keys; migrated on first load, don't write to them |
+
+The iOS app uses the same keys, but in its own WKWebView store
+(`capacitor://localhost`), separate from Safari's PWA storage. Export/Import
+backup is how data moves between the two.
 
 Autosave: `render()` ends with `persist()` (debounced 150ms). Anything that
 mutates state without calling `render()` must call `persist()` itself
@@ -73,6 +83,28 @@ Dates: `todayISO()`, `mondayOf(iso)`, `addDays(iso,n)`, `dateFor(week,day)`,
 
 `exLog[...].sets` is the 3-boolean array; `reps` is the free-text field. Don't
 reuse the name `sets` for anything else.
+
+## iOS app (Capacitor)
+
+`ios/App/App.xcodeproj` wraps `www/` in a WKWebView. Bundle id
+`com.cameronvl.trainingplan`, display name "5K Plan", team KQDWD62HJH
+(automatic signing), iOS 15+, portrait only. Plugins: `@capacitor/filesystem`
+and `@capacitor/share`. The page detects the shell with `nativeBridge()`
+(`window.Capacitor.isNativePlatform()`): Export backup then writes the JSON
+to the app cache and opens the share sheet instead of a download; Import and
+progress photos use the normal file inputs (Info.plist has the camera/photo
+usage strings). The service worker only registers on http(s), so the shell
+never loads `sw.js`. Body top padding honours `env(safe-area-inset-top)`.
+
+```bash
+npm run ios:sync     # stage www/ + cap sync ios — run after every index.html change
+npm run ios:open     # open the Xcode project
+npm run ios:assets   # regenerate icon + splash from assets/ (icon-only.png 1024, splash.png 2732)
+```
+Ship: Xcode → Product → Archive → Distribute App → TestFlight (or App Store).
+Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in the App target first;
+App Store Connect rejects a re-used build number. TestFlight builds expire after
+90 days, an App Store (unlisted is fine) release does not.
 
 ## Calendar dates
 
@@ -174,8 +206,9 @@ npm run serve        # http://localhost:8080 — use Safari responsive mode at 3
 ```
 Tests drive the DOM with jsdom; `window.scrollTo`, `scrollIntoView`, pointer
 capture and `elementFromPoint` are stubbed where needed. `tests/dates.test.cjs`
-covers the start date using dates relative to the real clock, and is the only
-file that sets a failing exit code on a FAIL — the older three just log. Add a
+covers the start date using dates relative to the real clock and
+`tests/native.test.cjs` fakes the Capacitor bridge for the share-sheet backup;
+those two set a failing exit code on a FAIL — the older three just log. Add a
 test when you add a feature. Keep `node -e "new Function(script)"`-style syntax checks
 passing; a broken script means a blank app on her phone.
 
@@ -191,6 +224,7 @@ the new version. Netlify Drop still works as a fallback.
   stub). Check the JSON comes back clean and the paces make sense.
 - "Add your own exercise" in the swap dropdown; "reset exercise list" so
   updated defaults reach a plan that has customised exercises.
-- Optional: push reminders (needs iOS 16.4+ PWA notification permission).
-- Optional: native wrapper via Capacitor if an App Store build is ever wanted
-  (needs a Mac + Xcode).
+- Optional: reminders — in the iOS app this is `@capacitor/local-notifications`
+  (no server needed); the PWA route needs iOS 16.4+ web push permission.
+- App Store (unlisted) release once TestFlight has been used for a while, so the
+  build stops expiring every 90 days.

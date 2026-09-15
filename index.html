@@ -13,9 +13,10 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Fonts are bundled in fonts/ (variable files from Google Fonts, latin subset) so the PWA and the iOS app look the same offline. */
+  @font-face{font-family:'Fraunces';font-style:normal;font-weight:500 600;font-display:swap;src:url(fonts/fraunces-latin.woff2) format('woff2');}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/inter-latin.woff2) format('woff2');}
   :root{
     --bg:#FDF6F8;
     --ink:#3A1A26;
@@ -32,7 +33,12 @@
     --stop:#B4432E; --timer:var(--p600);
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;padding:28px 18px 60px;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;padding:max(28px, calc(env(safe-area-inset-top, 0px) + 12px)) 18px 60px;}
+  /* App feel on the phone: no long-press text selection or tap flash outside fields; iOS date inputs sized like the other fields. */
+  body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;}
+  input,textarea{-webkit-user-select:text;user-select:text;}
+  input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;min-height:38px;text-align:left;}
+  input[type=date]::-webkit-date-and-time-value{text-align:left;}
   .wrap{max-width:760px;margin:0 auto;}
   h1{font-family:'Fraunces',serif;font-weight:600;font-size:1.7rem;margin:0 0 4px;letter-spacing:-0.01em;color:var(--p900);}
   .sub{color:var(--ink-soft);font-size:0.92rem;margin-bottom:22px;}
@@ -1300,19 +1306,42 @@ function render(){
   persist();
 }
 
+// The iOS app (Capacitor) exposes its native plugins on window.Capacitor; on the web this returns null.
+function nativeBridge(){
+  const cap = window.Capacitor;
+  if(!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return null;
+  const get = name => (cap.Plugins && cap.Plugins[name]) || (typeof cap.registerPlugin === 'function' ? cap.registerPlugin(name) : null);
+  const Filesystem = get('Filesystem'), Share = get('Share');
+  return (Filesystem && Share) ? { Filesystem, Share } : null;
+}
 async function saveProgress(){
   const data = snapshot();
   try{ data.progress = await pgAll(); }catch(e){}
+  const status = document.getElementById('saveStatus');
+  const fileName = (plan.name||'training-plan').replace(/[^a-z0-9]+/gi,'-').toLowerCase() + '-backup.json';
+  const native = nativeBridge();
+  if(native){
+    // Inside the iOS app: write the backup to the app's cache folder and open the share sheet (Save to Files, AirDrop, Mail…).
+    status.textContent = '';
+    try{
+      const file = await native.Filesystem.writeFile({ path: fileName, data: JSON.stringify(data, null, 2), directory: 'CACHE', encoding: 'utf8' });
+      await native.Share.share({ title: 'Training plan backup', url: file.uri });
+      status.textContent = 'Backup shared';
+      setTimeout(()=>{ if(status.textContent==='Backup shared') status.textContent=''; }, 4000);
+    }catch(err){
+      if(!/cancel/i.test(String((err && err.message) || err))) status.textContent = "Couldn't share the backup";
+    }
+    return;
+  }
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = (plan.name||'training-plan').replace(/[^a-z0-9]+/gi,'-').toLowerCase() + '-backup.json';
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  const status = document.getElementById('saveStatus');
   status.textContent = 'Backup downloaded';
   setTimeout(()=>{ if(status.textContent==='Backup downloaded') status.textContent=''; }, 4000);
 }
@@ -1902,7 +1931,7 @@ let startTab = 'plan';
 try{ startTab = localStorage.getItem('5k-plan-tab') || 'plan'; }catch(e){}
 showTab(startTab);
 
-if('serviceWorker' in navigator){
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
 }
 </script>
