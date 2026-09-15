@@ -179,9 +179,11 @@ file that sets a failing exit code on a FAIL — the older three just log. Add a
 test when you add a feature. Keep `node -e "new Function(script)"`-style syntax checks
 passing; a broken script means a blank app on her phone.
 
-Deploy: drag the folder onto https://app.netlify.com/drop (or push to the
-GitHub Pages repo). Bump `CACHE_NAME` first. On the phone: close the app
-fully and reopen twice to pick up the new version.
+Deploy: live at https://cameronvl98.github.io/5k-plan/ via GitHub Pages from
+the `main` branch of the public repo https://github.com/cameronvl98/5k-plan.
+Bump `CACHE_NAME`, run `npm test`, commit, `git push` — Pages rebuilds in
+about a minute. On the phone: close the app fully and reopen twice to pick up
+the new version. Netlify Drop still works as a fallback.
 
 ## Possible next steps (not started)
 

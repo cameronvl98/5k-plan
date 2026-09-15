@@ -10,25 +10,20 @@ Files:
 - `sw.js` — service worker, caches the app so it opens with no signal
 - `icon-180.png`, `icon-192.png`, `icon-512.png` — home screen icons
 
-## 1. Put it online (pick one)
+## 1. Where it lives
 
-**Option A — Netlify Drop (fastest, about 2 minutes)**
-1. Go to https://app.netlify.com/drop
-2. Drag this whole folder onto the page
-3. It gives you a link like `https://something-random.netlify.app`
-4. Optional: rename the site in Site settings so the link is tidier
+Live at **https://cameronvl98.github.io/5k-plan/** — GitHub Pages, served from
+the `main` branch of https://github.com/cameronvl98/5k-plan (a public repo:
+Pages on the free plan needs that). Every push to `main` redeploys in about a
+minute.
 
-**Option B — GitHub Pages**
-1. Make a new repo (public or private both work for Pages on a paid plan; public is simplest)
-2. Upload these files to the root of the repo
-3. Settings → Pages → Source: "Deploy from a branch" → main / root → Save
-4. Link is `https://<username>.github.io/<repo-name>/`
-
-Either way the link must be `https://` — the service worker won't run on plain `http://`.
+Fallback if GitHub is ever a problem: log in to Netlify and drag this folder
+onto https://app.netlify.com/drop. Either way the link must be `https://` —
+the service worker won't run on plain `http://`.
 
 ## 2. Install on Chloe's iPhone
 
-1. Open the link in **Safari** (not Chrome, not the Gmail in-app browser — iOS only installs from Safari)
+1. Open https://cameronvl98.github.io/5k-plan/ in **Safari** (not Chrome, not the Gmail in-app browser — iOS only installs from Safari)
 2. Tap the Share button (square with an arrow)
 3. Scroll down, tap **Add to Home Screen**
 4. Tap **Add**
@@ -41,8 +36,8 @@ Restrictions → Allowed Apps → make sure Safari is on.
 ## 3. Updating the app later
 
 1. Edit `index.html`
-2. In `sw.js`, change `CACHE_NAME` (e.g. `5k-plan-v1` → `5k-plan-v2`)
-3. Re-upload the folder
+2. In `sw.js`, change `CACHE_NAME` (e.g. `5k-plan-v26` → `5k-plan-v27`)
+3. `npm test`, then commit and `git push` — Pages rebuilds in about a minute
 4. On the phone, close the app fully and reopen it twice — the new version loads
 
 ## Plans
