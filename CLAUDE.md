@@ -106,6 +106,20 @@ Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in the App target first;
 App Store Connect rejects a re-used build number. TestFlight builds expire after
 90 days, an App Store (unlisted is fine) release does not.
 
+Headless alternative — signing is automatic and cloud-managed, verified
+2026-09-16, so no Xcode GUI is needed once the App Store Connect app record
+exists (first time: My Apps → + → New App, bundle id above):
+```bash
+cd ios/App
+xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath build/App.xcarchive \
+  -allowProvisioningUpdates -skipMacroValidation archive
+xcodebuild -exportArchive -archivePath build/App.xcarchive \
+  -exportOptionsPlist ExportOptions.plist -exportPath output -allowProvisioningUpdates
+# ExportOptions.plist says destination=export → output/App.ipa. Change it to
+# upload (or use Transporter / Xcode Organizer with the .ipa) to reach TestFlight.
+```
+
 ## Calendar dates
 
 `plan.startDate` is optional (Monday of week 1, or `''`). When set,

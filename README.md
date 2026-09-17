@@ -50,6 +50,11 @@ The same app also builds as a native iPhone app: `ios/App/App.xcodeproj`.
 3. Product → Archive → Distribute App → TestFlight. Chloe installs it from the
    TestFlight app on her phone (invite her Apple ID as a tester once).
 
+First time only: create the app in App Store Connect (My Apps → + → New App,
+bundle id `com.cameronvl.trainingplan`, name "5K Plan"); Xcode also offers to
+do this during Distribute. A signed build already sits in `ios/App/output/`
+and in Xcode's Organizer (Window → Organizer → Archives).
+
 Inside the app, **Export backup** opens the share sheet (Save to Files, AirDrop,
 Mail) instead of downloading. The app keeps its own data, separate from the
 Safari version — use Export/Import to move progress across.
